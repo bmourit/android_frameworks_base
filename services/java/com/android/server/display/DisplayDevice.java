@@ -18,8 +18,8 @@ package com.android.server.display;
 
 import android.graphics.Rect;
 import android.os.IBinder;
+import android.os.SystemProperties;
 import android.view.Surface;
-
 import java.io.PrintWriter;
 
 /**
@@ -30,6 +30,7 @@ import java.io.PrintWriter;
  * </p>
  */
 abstract class DisplayDevice {
+    private static final String SCREENSHOT_HW_ROTATION = "ro.sf.hwrotation";
     private final DisplayAdapter mDisplayAdapter;
     private final IBinder mDisplayToken;
 
@@ -39,6 +40,7 @@ abstract class DisplayDevice {
     private int mCurrentOrientation = -1;
     private Rect mCurrentLayerStackRect;
     private Rect mCurrentDisplayRect;
+    private int mHwRotation;
 
     // The display device owns its surface, but it should only set it
     // within a transaction from performTraversalInTransactionLocked.
@@ -47,6 +49,8 @@ abstract class DisplayDevice {
     public DisplayDevice(DisplayAdapter displayAdapter, IBinder displayToken) {
         mDisplayAdapter = displayAdapter;
         mDisplayToken = displayToken;
+        mHwRotation = 0;
+        mHwRotation = SystemProperties.getInt("ro.sf.hwrotation", 0) / 90;
     }
 
     /**
@@ -175,7 +179,46 @@ abstract class DisplayDevice {
      * physical and logical rects based on the display's current projection.
      */
     public final void populateViewportLocked(DisplayViewport viewport) {
-        viewport.orientation = mCurrentOrientation;
+        boolean z0;
+        DisplayDeviceInfo info;
+        int i2, i6, i7;
+        z0 = true;
+        i2 = mCurrentOrientation - mHwRotation;
+        if (i2 < 0) {
+            i2 = i2 + 4;
+        }
+        viewport.orientation = i2;
+        if (mCurrentLayerStackRect == null) {
+            viewport.logicalFrame.setEmpty();
+        } else {
+            viewport.logicalFrame.set(mCurrentLayerStackRect);
+        }
+        if (mCurrentDisplayRect == null) {
+            viewport.physicalFrame.setEmpty();
+        } else {
+            viewport.physicalFrame.set(mCurrentDisplayRect);
+        }
+        if (mCurrentOrientation != (int) 1) {
+            if (mCurrentOrientation != 3) {
+                z0 = false;
+            }
+        }
+        info = this.getDisplayDeviceInfoLocked();
+        if (z0 == false)
+        {
+            i6 = info.width;
+        } else {
+            i6 = info.height;
+        }
+        viewport.deviceWidth = i6;
+        if (z0 == false) {
+            i7 = info.height;
+        } else {
+            i7 = info.width;
+        }
+        viewport.deviceHeight = i7;
+        
+        /**viewport.orientation = mCurrentOrientation;
 
         if (mCurrentLayerStackRect != null) {
             viewport.logicalFrame.set(mCurrentLayerStackRect);
@@ -193,7 +236,7 @@ abstract class DisplayDevice {
                 || mCurrentOrientation == Surface.ROTATION_270);
         DisplayDeviceInfo info = getDisplayDeviceInfoLocked();
         viewport.deviceWidth = isRotated ? info.height : info.width;
-        viewport.deviceHeight = isRotated ? info.width : info.height;
+        viewport.deviceHeight = isRotated ? info.width : info.height;**/
     }
 
     /**
