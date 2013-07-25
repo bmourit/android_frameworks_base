@@ -9042,13 +9042,14 @@ public class WindowManagerService extends IWindowManager.Stub
                     // Simulate one-way call if win.mClient is a local object.
                     final IWindow client = win.mClient;
                     final Rect frame = win.mFrame;
+                    final Rect overscanInsets = win.mLastOverscanInsets;
                     final Rect contentInsets = win.mLastContentInsets;
                     final Rect visibleInsets = win.mLastVisibleInsets;
                     mH.post(new Runnable() {
                         @Override
                         public void run() {
                             try {
-                                client.resized(frame, contentInsets, visibleInsets,
+                                client.resized(frame, overscanInsets, contentInsets, visibleInsets,
                                                reportDraw, newConfig);
                             } catch (RemoteException e) {
                                 // Actually, it's not a remote call.

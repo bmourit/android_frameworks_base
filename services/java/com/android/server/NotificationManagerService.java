@@ -1258,13 +1258,12 @@ public class NotificationManagerService extends INotificationManager.Stub
     };
 
     class LEDSettingsObserver extends ContentObserver {
-        LEDSettingsObserver(Handler handler) {
         private final Uri NOTIFICATION_LIGHT_PULSE_URI
                 = Settings.System.getUriFor(Settings.System.NOTIFICATION_LIGHT_PULSE);
-
         private final Uri ENABLED_NOTIFICATION_LISTENERS_URI
                 = Settings.Secure.getUriFor(Settings.Secure.ENABLED_NOTIFICATION_LISTENERS);
 
+        LEDSettingsObserver(Handler handler) {
             super(handler);
         }
 
@@ -1367,7 +1366,7 @@ public class NotificationManagerService extends INotificationManager.Stub
         }
     }
 
-    private SettingsObserver mSettingsObserver;
+    private LEDSettingsObserver mSettingsObserver;
 
     static long[] getLongArray(Resources r, int resid, int maxlen, long[] def) {
         int[] ar = r.getIntArray(resid);
@@ -1466,11 +1465,9 @@ public class NotificationManagerService extends INotificationManager.Stub
         IntentFilter sdFilter = new IntentFilter(Intent.ACTION_EXTERNAL_APPLICATIONS_UNAVAILABLE);
         mContext.registerReceiver(mIntentReceiver, sdFilter);
 
-        LEDSettingsObserver ledObserver = new LEDSettingsObserver(mHandler);
-        ledObserver.observe();
         QuietHoursSettingsObserver qhObserver = new QuietHoursSettingsObserver(mHandler);
         qhObserver.observe();
-        mSettingsObserver = new SettingsObserver(mHandler);
+        mSettingsObserver = new LEDSettingsObserver(mHandler);
         mSettingsObserver.observe();
     }
 
@@ -2340,7 +2337,7 @@ public class NotificationManagerService extends INotificationManager.Stub
             // use most recent light with highest score
             for (int i = mLights.size(); i > 0; i--) {
                 NotificationRecord r = mLights.get(i - 1);
-                if (mLedNotification == null || r.score > mLedNotification.score) {
+                if (mLedNotification == null || r.sbn.getScore() > mLedNotification.sbn.getScore()) {
                     mLedNotification = r;
                 }
             }
@@ -2361,14 +2358,14 @@ public class NotificationManagerService extends INotificationManager.Stub
                 ledOnMS = ledValues.onMS >= 0 ? ledValues.onMS : mDefaultNotificationLedOn;
                 ledOffMS = ledValues.offMS >= 0 ? ledValues.offMS : mDefaultNotificationLedOff;
             } else {
-                if ((mLedNotification.notification.defaults & Notification.DEFAULT_LIGHTS) != 0) {
+                if ((mLedNotification.sbn.getNotification().defaults & Notification.DEFAULT_LIGHTS) != 0) {
                     ledARGB = mDefaultNotificationColor;
                     ledOnMS = mDefaultNotificationLedOn;
                     ledOffMS = mDefaultNotificationLedOff;
                 } else {
-                    ledARGB = mLedNotification.notification.ledARGB;
-                    ledOnMS = mLedNotification.notification.ledOnMS;
-                    ledOffMS = mLedNotification.notification.ledOffMS;
+                    ledARGB = mLedNotification.sbn.getNotification().ledARGB;
+                    ledOnMS = mLedNotification.sbn.getNotification().ledOnMS;
+                    ledOffMS = mLedNotification.sbn.getNotification().ledOffMS;
                 }
             }
             if (mNotificationPulseEnabled) {
@@ -2410,7 +2407,7 @@ public class NotificationManagerService extends INotificationManager.Stub
     }
 
     private NotificationLedValues getLedValuesForNotification(NotificationRecord ledNotification) {
-        return mNotificationPulseCustomLedValues.get(mapPackage(ledNotification.pkg));
+        return mNotificationPulseCustomLedValues.get(mapPackage(ledNotification.sbn.getPackageName()));
     }
 
     private String mapPackage(String pkg) {
