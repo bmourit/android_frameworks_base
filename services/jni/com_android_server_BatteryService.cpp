@@ -192,7 +192,7 @@ static void setIntField(JNIEnv* env, jobject obj, const String8& path, jfieldID 
     env->SetIntField(obj, fieldID, value);
 }
 
-static void setIntFieldMax(JNIEnv* env, jobject obj, const char* path, jfieldID fieldID, int maxValue)
+static void setIntFieldMax(JNIEnv* env, jobject obj, const String8& path, jfieldID fieldID, int maxValue)
 {
     const int SIZE = 128;
     char buf[SIZE];
