@@ -79,38 +79,31 @@ final class LocalDisplayAdapter extends DisplayAdapter {
         super.registerLocked();
 
         mHotplugReceiver = new HotplugDisplayEventReceiver(getHandler().getLooper());
-
+        scanDisplaysLocked();
+    }
+    
+    private void scanDisplaysLocked() {
         for (int builtInDisplayId : BUILT_IN_DISPLAY_IDS_TO_SCAN) {
-            tryConnectDisplayLocked(builtInDisplayId);
-        }
-    }
-
-    private void tryConnectDisplayLocked(int builtInDisplayId) {
-        IBinder displayToken = SurfaceControl.getBuiltInDisplay(builtInDisplayId);
-        if (displayToken != null && SurfaceControl.getDisplayInfo(displayToken, mTempPhys)) {
-            LocalDisplayDevice device = mDevices.get(builtInDisplayId);
-            if (device == null) {
-                // Display was added.
-                device = new LocalDisplayDevice(displayToken, builtInDisplayId, mTempPhys);
-                mDevices.put(builtInDisplayId, device);
-                sendDisplayDeviceEventLocked(device, DISPLAY_DEVICE_EVENT_ADDED);
-            } else if (device.updatePhysicalDisplayInfoLocked(mTempPhys)) {
-                // Display properties changed.
-                sendDisplayDeviceEventLocked(device, DISPLAY_DEVICE_EVENT_CHANGED);
+            IBinder displayToken = SurfaceControl.getBuiltInDisplay(builtInDisplayId);
+            if (displayToken != null && SurfaceControl.getDisplayInfo(displayToken, mTempPhys)) {
+                LocalDisplayDevice device = mDevices.get(builtInDisplayId);
+                if (device == null) {
+                    // Display was added.
+                    device = new LocalDisplayDevice(displayToken, builtInDisplayId, mTempPhys);
+                    mDevices.put(builtInDisplayId, device);
+                    sendDisplayDeviceEventLocked(device, DISPLAY_DEVICE_EVENT_ADDED);
+                } else if (device.updatePhysicalDisplayInfoLocked(mTempPhys)) {
+                    // Display properties changed.
+                    sendDisplayDeviceEventLocked(device, DISPLAY_DEVICE_EVENT_CHANGED);
+                }
+            } else {
+                LocalDisplayDevice device = mDevices.get(builtInDisplayId);
+                if (device != null) {
+                    // Display was removed.
+                    mDevices.remove(builtInDisplayId);
+                    sendDisplayDeviceEventLocked(device, DISPLAY_DEVICE_EVENT_REMOVED);
+                }
             }
-        } else {
-            // The display is no longer available. Ignore the attempt to add it.
-            // If it was connected but has already been disconnected, we'll get a
-            // disconnect event that will remove it from mDevices.
-        }
-    }
-
-    private void tryDisconnectDisplayLocked(int builtInDisplayId) {
-        LocalDisplayDevice device = mDevices.get(builtInDisplayId);
-        if (device != null) {
-            // Display was removed.
-            mDevices.remove(builtInDisplayId);
-            sendDisplayDeviceEventLocked(device, DISPLAY_DEVICE_EVENT_REMOVED);
         }
     }
 
@@ -151,22 +144,22 @@ final class LocalDisplayAdapter extends DisplayAdapter {
             if (mInfo == null) {
                 mInfo = new DisplayDeviceInfo();
                 if ((LocalDisplayAdapter.access$000() & 1) == 0) {
-                	if (LocalDisplayAdapter.access$100() != 1) {
+                    if (LocalDisplayAdapter.access$100() != 1) {
                 mInfo.width = mPhys.width;
                 mInfo.height = mPhys.height;
-                	} else {
-                		mInfo.width = mPhys.height;
-                		mInfo.height = mPhys.width;
+                    } else {
+                        mInfo.width = mPhys.height;
+                        mInfo.height = mPhys.width;
                         }
-                	} else {
-                		if (LocalDisplayAdapter.access$100() != 1) {
-                			mInfo.width = mPhys.height;
-                    		mInfo.height = mPhys.width;
-                		} else {
-                			mInfo.width = mPhys.width;
+                    } else {
+                        if (LocalDisplayAdapter.access$100() != 1) {
+                            mInfo.width = mPhys.height;
+                            mInfo.height = mPhys.width;
+                        } else {
+                            mInfo.width = mPhys.width;
                             mInfo.height = mPhys.height;
-                		}
-                	}
+                        }
+                    }
                 mInfo.refreshRate = mPhys.refreshRate;
 
                 // Assume that all built-in displays that have secure output (eg. HDCP) also
