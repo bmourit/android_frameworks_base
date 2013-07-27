@@ -238,7 +238,7 @@ abstract class DisplayDevice {
                 || mCurrentOrientation == Surface.ROTATION_270);
         DisplayDeviceInfo info = getDisplayDeviceInfoLocked();
         viewport.deviceWidth = isRotated ? info.height : info.width;
-        viewport.deviceHeight = isRotated ? info.width : info.height;
+        viewport.deviceHeight = isRotated ? info.width : info.height;**/
     }
 
     /**
