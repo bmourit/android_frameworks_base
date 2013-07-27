@@ -226,11 +226,7 @@ final class LocalDisplayAdapter extends DisplayAdapter {
         @Override
         public void onHotplug(long timestampNanos, int builtInDisplayId, boolean connected) {
             synchronized (getSyncRoot()) {
-                if (connected) {
-                    tryConnectDisplayLocked(builtInDisplayId);
-                } else {
-                    tryDisconnectDisplayLocked(builtInDisplayId);
-                }
+                scanDisplaysLocked();
             }
         }
     }
