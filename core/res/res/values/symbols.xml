@@ -705,8 +705,10 @@
   <java-symbol type="string" name="preposition_for_time" />
   <java-symbol type="string" name="progress_erasing" />
   <java-symbol type="string" name="progress_unmounting" />
+  <java-symbol type="string" name="mobile_provisioning_apn" />
   <java-symbol type="string" name="mobile_provisioning_url" />
   <java-symbol type="string" name="mobile_redirected_provisioning_url" />
+  <java-symbol type="string" name="progress_nomediapresent" />
   <java-symbol type="string" name="reboot_safemode_confirm" />
   <java-symbol type="string" name="reboot_safemode_title" />
   <java-symbol type="string" name="relationTypeAssistant" />
@@ -1535,6 +1537,8 @@
   <java-symbol type="anim" name="rotation_animation_jump_exit" />
   <java-symbol type="anim" name="rotation_animation_xfade_exit" />
   <java-symbol type="anim" name="rotation_animation_enter" />
+  <java-symbol type="anim" name="shrink_fade_out_center" />
+  <java-symbol type="anim" name="grow_fade_in_center" />
   <java-symbol type="array" name="config_autoBrightnessButtonBacklightValues" />
   <java-symbol type="array" name="config_autoBrightnessKeyboardBacklightValues" />
   <java-symbol type="array" name="config_autoBrightnessLcdBacklightValues" />
@@ -1616,6 +1620,9 @@
   <java-symbol type="integer" name="config_screenBrightnessSettingMaximum" />
   <java-symbol type="integer" name="config_screenBrightnessSettingDefault" />
   <java-symbol type="integer" name="config_screenBrightnessDim" />
+  <java-symbol type="integer" name="config_buttonBrightnessSettingDefault" />
+  <java-symbol type="integer" name="config_keyboardBrightnessSettingDefault" />
+  <java-symbol type="bool" name="config_deviceHasVariableButtonBrightness" />
   <java-symbol type="integer" name="config_shutdownBatteryTemperature" />
   <java-symbol type="integer" name="config_undockedHdmiRotation" />
   <java-symbol type="integer" name="config_virtualKeyQuietTimeMillis" />
@@ -2037,5 +2044,11 @@
   <java-symbol type="string" name="privacy_guard_notification" />
   <java-symbol type="string" name="privacy_guard_notification_detail" />
   <java-symbol type="drawable" name="stat_notify_privacy_guard" />
+
+  <!-- Irda Service -->
+  <java-symbol type="bool" name="config_enableIrdaManagerService" />
+
+  <!-- Package Manager -->
+  <java-symbol type="array" name="config_disabledComponents" />
 
 </resources>

@@ -1098,7 +1098,11 @@ public final class ActivityManagerService  extends ActivityManagerNative
                     mHandler.sendMessageDelayed(nmsg, ActiveServices.SERVICE_TIMEOUT);
                     return;
                 }
-                mServices.serviceTimeout((ProcessRecord)msg.obj);
+                //synchronising to avoid proc.executingServices set
+                //getting updated while being iterated in serviceTimeout()
+                synchronized(ActivityManagerService.this){
+                    mServices.serviceTimeout((ProcessRecord)msg.obj);
+                }
             } break;
             case UPDATE_TIME_ZONE: {
                 synchronized (ActivityManagerService.this) {
@@ -6028,7 +6032,11 @@ public final class ActivityManagerService  extends ActivityManagerNative
                     }
                     
                     res.add(rti);
-                    maxNum--;
+                    if ((tr.intent.getFlags() & Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS) == 0
+                            || (flags & ActivityManager.RECENT_DO_NOT_COUNT_EXCLUDED) == 0
+                            || i == 0) {
+                        maxNum--;
+                    }
                 }
             }
             return res;

@@ -17,6 +17,7 @@
 
 package android.app;
 
+import android.R;
 import com.android.internal.app.IUsageStats;
 import com.android.internal.os.PkgUsageStats;
 import com.android.internal.util.MemInfoReader;
@@ -371,9 +372,9 @@ public class ActivityManager {
         // Really brain dead right now -- just take this from the configured
         // vm heap size, and assume it is in megabytes and thus ends with "m".
         String vmHeapSize = SystemProperties.get("dalvik.vm.heapsize", "16m");
-        return Integer.parseInt(vmHeapSize.substring(0, vmHeapSize.length()-1));
+        return Integer.parseInt(vmHeapSize.substring(0, vmHeapSize.length() - 1));
     }
-    
+
     /**
      * Used by persistent processes to determine if they are running on a
      * higher-end device so should be okay using hardware drawing acceleration
@@ -516,6 +517,11 @@ public class ActivityManager {
      * recent tasks that currently are not available to the user.
      */
     public static final int RECENT_IGNORE_UNAVAILABLE = 0x0002;
+
+    /**
+     * @hide
+     */
+    public static final int RECENT_DO_NOT_COUNT_EXCLUDED = 0x0004;
 
     /**
      * Return a list of the tasks that the user has recently launched, with

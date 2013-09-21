@@ -125,11 +125,13 @@ public class CameraTile extends QuickSettingsTile {
             mCamera.setParameters(mParams);
             updateOrientation();
 
+            final PanelView panel = getContainingPanel();
+            final View parent = (View) mContainer.getParent();
+
             mHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    final PanelView panel = getContainingPanel();
-                    if (panel != null && panel.isFullyExpanded()) {
+                    if (panel.isFullyExpanded() && parent.getScaleX() == 1) {
                         mHandler.postDelayed(this, 100);
                     } else {
                         mHandler.post(mReleaseCameraRunnable);
@@ -243,6 +245,7 @@ public class CameraTile extends QuickSettingsTile {
     public CameraTile(Context context, QuickSettingsController qsc, Handler handler) {
         super(context, qsc, R.layout.quick_settings_tile_camera);
         mHandler = handler;
+        mLabel = mContext.getString(R.string.quick_settings_camera_label);
 
         String imageFileNameFormat = DEFAULT_IMAGE_FILE_NAME_FORMAT;
         try {
