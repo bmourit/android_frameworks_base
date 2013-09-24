@@ -38,20 +38,12 @@ import java.io.PrintWriter;
  */
 final class LocalDisplayAdapter extends DisplayAdapter {
     private static final String TAG = "LocalDisplayAdapter";
-    private static final int mDefaultRotation;
-    private static final int mHwRotation;
-    private static final int[] BUILT_IN_DISPLAY_IDS_TO_SCAN;
 
-    static {
-        int[] ids;
-        ids = new int[2];
-        ids[0] = SurfaceControl.BUILT_IN_DISPLAY_ID_MAIN;
-        ids[1] = SurfaceControl.BUILT_IN_DISPLAY_ID_HDMI;
-        BUILT_IN_DISPLAY_IDS_TO_SCAN = ids;
-        mDefaultRotation = SystemProperties.getInt("ro.sf.default_rotation", 0);
-        mHwRotation = SystemProperties.getInt("ro.sf.hwrotation", 0) / 90;
-    }
-    
+    private static final int[] BUILT_IN_DISPLAY_IDS_TO_SCAN = new int[] {
+            SurfaceControl.BUILT_IN_DISPLAY_ID_MAIN,
+            SurfaceControl.BUILT_IN_DISPLAY_ID_HDMI,
+    };
+
     private final SparseArray<LocalDisplayDevice> mDevices =
             new SparseArray<LocalDisplayDevice>();
     private HotplugDisplayEventReceiver mHotplugReceiver;
@@ -63,47 +55,44 @@ final class LocalDisplayAdapter extends DisplayAdapter {
             Context context, Handler handler, Listener listener) {
         super(syncRoot, context, handler, listener, TAG);
     }
-    
-    static int access$000() {
-        return mHwRotation;
-    }
-    static int access$100() {
-        return mDefaultRotation;
-    }
-    static void access$200(LocalDisplayAdapter r0) {
-        r0.scanDisplaysLocked();
-    }
-    
+
     @Override
     public void registerLocked() {
         super.registerLocked();
 
         mHotplugReceiver = new HotplugDisplayEventReceiver(getHandler().getLooper());
-        scanDisplaysLocked();
-    }
-    
-    private void scanDisplaysLocked() {
+
         for (int builtInDisplayId : BUILT_IN_DISPLAY_IDS_TO_SCAN) {
-            IBinder displayToken = SurfaceControl.getBuiltInDisplay(builtInDisplayId);
-            if (displayToken != null && SurfaceControl.getDisplayInfo(displayToken, mTempPhys)) {
-                LocalDisplayDevice device = mDevices.get(builtInDisplayId);
-                if (device == null) {
-                    // Display was added.
-                    device = new LocalDisplayDevice(displayToken, builtInDisplayId, mTempPhys);
-                    mDevices.put(builtInDisplayId, device);
-                    sendDisplayDeviceEventLocked(device, DISPLAY_DEVICE_EVENT_ADDED);
-                } else if (device.updatePhysicalDisplayInfoLocked(mTempPhys)) {
-                    // Display properties changed.
-                    sendDisplayDeviceEventLocked(device, DISPLAY_DEVICE_EVENT_CHANGED);
-                }
-            } else {
-                LocalDisplayDevice device = mDevices.get(builtInDisplayId);
-                if (device != null) {
-                    // Display was removed.
-                    mDevices.remove(builtInDisplayId);
-                    sendDisplayDeviceEventLocked(device, DISPLAY_DEVICE_EVENT_REMOVED);
-                }
+            tryConnectDisplayLocked(builtInDisplayId);
+        }
+    }
+
+    private void tryConnectDisplayLocked(int builtInDisplayId) {
+        IBinder displayToken = SurfaceControl.getBuiltInDisplay(builtInDisplayId);
+        if (displayToken != null && SurfaceControl.getDisplayInfo(displayToken, mTempPhys)) {
+            LocalDisplayDevice device = mDevices.get(builtInDisplayId);
+            if (device == null) {
+                // Display was added.
+                device = new LocalDisplayDevice(displayToken, builtInDisplayId, mTempPhys);
+                mDevices.put(builtInDisplayId, device);
+                sendDisplayDeviceEventLocked(device, DISPLAY_DEVICE_EVENT_ADDED);
+            } else if (device.updatePhysicalDisplayInfoLocked(mTempPhys)) {
+                // Display properties changed.
+                sendDisplayDeviceEventLocked(device, DISPLAY_DEVICE_EVENT_CHANGED);
             }
+        } else {
+            // The display is no longer available. Ignore the attempt to add it.
+            // If it was connected but has already been disconnected, we'll get a
+            // disconnect event that will remove it from mDevices.
+        }
+    }
+
+    private void tryDisconnectDisplayLocked(int builtInDisplayId) {
+        LocalDisplayDevice device = mDevices.get(builtInDisplayId);
+        if (device != null) {
+            // Display was removed.
+            mDevices.remove(builtInDisplayId);
+            sendDisplayDeviceEventLocked(device, DISPLAY_DEVICE_EVENT_REMOVED);
         }
     }
 
@@ -143,23 +132,8 @@ final class LocalDisplayAdapter extends DisplayAdapter {
         public DisplayDeviceInfo getDisplayDeviceInfoLocked() {
             if (mInfo == null) {
                 mInfo = new DisplayDeviceInfo();
-                if ((LocalDisplayAdapter.access$000() & 1) == 0) {
-                    if (LocalDisplayAdapter.access$100() != 1) {
                 mInfo.width = mPhys.width;
                 mInfo.height = mPhys.height;
-                    } else {
-                        mInfo.width = mPhys.height;
-                        mInfo.height = mPhys.width;
-                        }
-                    } else {
-                        if (LocalDisplayAdapter.access$100() != 1) {
-                            mInfo.width = mPhys.height;
-                            mInfo.height = mPhys.width;
-                        } else {
-                            mInfo.width = mPhys.width;
-                            mInfo.height = mPhys.height;
-                        }
-                    }
                 mInfo.refreshRate = mPhys.refreshRate;
 
                 // Assume that all built-in displays that have secure output (eg. HDCP) also
@@ -179,7 +153,6 @@ final class LocalDisplayAdapter extends DisplayAdapter {
                     mInfo.xDpi = mPhys.xDpi;
                     mInfo.yDpi = mPhys.yDpi;
                     mInfo.touch = DisplayDeviceInfo.TOUCH_INTERNAL;
-                    mInfo.rotation = LocalDisplayAdapter.access$000();
                 } else {
                     mInfo.type = Display.TYPE_HDMI;
                     mInfo.name = getContext().getResources().getString(
@@ -226,7 +199,11 @@ final class LocalDisplayAdapter extends DisplayAdapter {
         @Override
         public void onHotplug(long timestampNanos, int builtInDisplayId, boolean connected) {
             synchronized (getSyncRoot()) {
-                scanDisplaysLocked();
+                if (connected) {
+                    tryConnectDisplayLocked(builtInDisplayId);
+                } else {
+                    tryDisconnectDisplayLocked(builtInDisplayId);
+                }
             }
         }
     }

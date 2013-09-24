@@ -16,7 +16,6 @@
 
 package com.android.server.display;
 
-import android.os.SystemProperties;
 import android.graphics.Rect;
 import android.view.Display;
 import android.view.DisplayInfo;
@@ -59,9 +58,7 @@ final class LogicalDisplay {
     // The layer stack we use when the display has been blanked to prevent any
     // of its content from appearing.
     private static final int BLANK_LAYER_STACK = -1;
-    private static final int mDefaultRotation;
-    private static final int mHwRotation;
-    
+
     private final int mDisplayId;
     private final int mLayerStack;
     private DisplayInfo mOverrideDisplayInfo; // set by the window manager
@@ -79,11 +76,6 @@ final class LogicalDisplay {
     private final Rect mTempLayerStackRect = new Rect();
     private final Rect mTempDisplayRect = new Rect();
 
-    static {
-        mDefaultRotation = SystemProperties.getInt("ro.sf.default_rotation", 0);
-        mHwRotation = SystemProperties.getInt("ro.sf.hwrotation", 0) / 90;
-    }
-    
     public LogicalDisplay(int displayId, int layerStack, DisplayDevice primaryDisplayDevice) {
         mDisplayId = displayId;
         mLayerStack = layerStack;
@@ -217,14 +209,7 @@ final class LogicalDisplay {
             mBaseDisplayInfo.appHeight = deviceInfo.height;
             mBaseDisplayInfo.logicalWidth = deviceInfo.width;
             mBaseDisplayInfo.logicalHeight = deviceInfo.height;
-            mBaseDisplayInfo.rotation = mDefaultRotation;
-            if ((mHwRotation & 1) != 0) {
-                mBaseDisplayInfo.logicalWidth = deviceInfo.height;
-                mBaseDisplayInfo.logicalHeight = deviceInfo.width;
-                } else {
-                    mBaseDisplayInfo.logicalWidth = deviceInfo.width;
-                    mBaseDisplayInfo.logicalHeight = deviceInfo.height;
-                }
+            mBaseDisplayInfo.rotation = Surface.ROTATION_0;
             mBaseDisplayInfo.refreshRate = deviceInfo.refreshRate;
             mBaseDisplayInfo.logicalDensityDpi = deviceInfo.densityDpi;
             mBaseDisplayInfo.physicalXDpi = deviceInfo.xDpi;

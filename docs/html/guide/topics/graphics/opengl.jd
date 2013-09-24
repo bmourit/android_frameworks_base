@@ -495,8 +495,8 @@ texture compression, see the {@code CompressedTextureActivity} code sample in An
 but it not guaranteed to be available. To check if the ETC1 format is supported on a device, call
 the {@link android.opengl.ETC1Util#isETC1Supported() ETC1Util.isETC1Supported()} method.</p>
 
-<p class="note"><b>Note:</b> The ETC1 texture compression format does not support textures with an
-transparency (alpha channel). If your application requires textures with transparency, you should
+<p class="note"><b>Note:</b> The ETC1 texture compression format does not support textures with
+transparency (an alpha channel). If your application requires textures with transparency, you should
 investigate other texture compression formats available on your target devices.</p>
 
 <p>The ETC2/EAC texture compression formats are guaranteed to be available when using the OpenGL ES
