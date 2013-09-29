@@ -45,7 +45,7 @@ public class QSUtils {
         }
 
         public static boolean expandedDesktopEnabled(ContentResolver resolver) {
-            return (Settings.System.getIntForUser(resolver, Settings.System.EXPANDED_DESKTOP_STYLE, 0,
+            return (Settings.System.getIntForUser(resolver, Settings.System.EXPANDED_DESKTOP_MODE, 0,
                     UserHandle.USER_CURRENT_OR_SELF) != 0);
         }
 
@@ -58,16 +58,12 @@ public class QSUtils {
             return (tm.getLteOnCdmaMode() == PhoneConstants.LTE_ON_CDMA_TRUE) || tm.getLteOnGsmMode() != 0;
         }
 
-        public static boolean deviceSupportsDockBattery(Context ctx) {
+/*        public static boolean deviceSupportsDockBattery(Context ctx) {
             Resources res = ctx.getResources();
             return res.getBoolean(com.android.internal.R.bool.config_hasDockBattery);
-        }
+        } */
 
         public static boolean deviceSupportsCamera() {
             return Camera.getNumberOfCameras() > 0;
-        }
-
-        public static boolean adbEnabled(ContentResolver resolver) {
-            return (Settings.Global.getInt(resolver, Settings.Global.ADB_ENABLED, 0)) == 1;
         }
 }

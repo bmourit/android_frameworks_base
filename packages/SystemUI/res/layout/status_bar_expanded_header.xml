@@ -32,26 +32,24 @@
         android:layout_height="match_parent"
         android:paddingStart="8dp"
         android:paddingEnd="8dp"
+        android:enabled="false"
         >
-        <com.android.systemui.statusbar.policy.Clock
+        <com.android.systemui.statusbar.policy.ClockStock
             android:id="@+id/clock"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:paddingEnd="4dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
             android:singleLine="true"
             android:textAppearance="@style/TextAppearance.StatusBar.Expanded.Clock"
-            android:gravity="center_vertical"
-            android:clickable="true"
+            android:layout_centerVertical="true"
             />
 
         <com.android.systemui.statusbar.policy.DateView android:id="@+id/date"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:paddingStart="4dp"
+            android:layout_height="wrap_content"
             android:textAppearance="@style/TextAppearance.StatusBar.Expanded.Date"
             android:layout_toEndOf="@id/clock"
-            android:gravity="center_vertical"
-            android:clickable="true"
+            android:layout_centerVertical="true"
             />
     </RelativeLayout>
 
@@ -74,6 +72,15 @@
         android:padding="2dp"
         />
 
+    <ImageView android:id="@+id/halo_button"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+  	android:layout_marginLeft="5dp"
+        android:scaleType="center"
+        android:src="@drawable/ic_notify_halo"
+        android:contentDescription="@string/accessibility_halo"
+        />      
+
     <ImageView android:id="@+id/clear_all_button"
         android:layout_width="50dp"
         android:layout_height="50dp"
@@ -85,7 +92,7 @@
     <FrameLayout android:id="@+id/settings_button_holder"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:layout_marginStart="12dp"
+        android:layout_marginStart="5dp"
         >
         <ImageView android:id="@+id/settings_button"
             android:layout_width="50dp"

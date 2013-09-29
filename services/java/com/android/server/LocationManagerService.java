@@ -1102,8 +1102,7 @@ public class LocationManagerService extends ILocationManager.Stub {
 
         if (records != null) {
             for (UpdateRecord record : records) {
-                if (UserHandle.getUserId(record.mReceiver.mUid) == mCurrentUserId &&
-                        !mBlacklist.isBlacklisted(record.mReceiver.mPackageName)) {
+                if (UserHandle.getUserId(record.mReceiver.mUid) == mCurrentUserId) {
                     if (checkLocationAccess(record.mReceiver.mUid, record.mReceiver.mPackageName,
                             record.mReceiver.mAllowedResolutionLevel)) {
                         LocationRequest locationRequest = record.mRequest;
@@ -1565,7 +1564,6 @@ public class LocationManagerService extends ILocationManager.Stub {
         } finally {
             Binder.restoreCallingIdentity(ident);
         }
-
         try {
             mGpsStatusProvider.addGpsStatusListener(listener);
         } catch (RemoteException e) {

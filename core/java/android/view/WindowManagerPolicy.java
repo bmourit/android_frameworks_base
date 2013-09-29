@@ -421,6 +421,7 @@ public interface WindowManagerPolicy {
         public void shutdown(boolean confirm);
         public void rebootSafeMode(boolean confirm);
         public void reboot();
+        public void rebootTile();
     }
 
     /** Window has been added to the screen. */
@@ -598,6 +599,18 @@ public interface WindowManagerPolicy {
      * that to account for more transient decoration like a status bar.
      */
     public int getConfigDisplayHeight(int fullWidth, int fullHeight, int rotation);
+
+    public int getWallpaperHeight(int rotation);
+
+    public int getWallpaperWidth(int rotation);
+
+    public int getWallpaperTop(int rot);
+
+    public int getWallpaperLeft(int rot);
+
+    public int getWallpaperBottom(int rot);
+
+    public int getWallpaperRight(int rot);
 
     /**
      * Return whether the given window should forcibly hide everything
@@ -1050,6 +1063,11 @@ public interface WindowManagerPolicy {
     public void systemBooted();
 
     /**
+     * name of package being worked on during boot time message
+     */
+    public void setPackageName(String pkgName);
+
+    /**
      * Show boot time message to the user.
      */
     public void showBootMessage(final CharSequence msg, final boolean always);
@@ -1183,23 +1201,4 @@ public interface WindowManagerPolicy {
      * @return True if the window is a top level one.
      */
     public boolean isTopLevelWindow(int windowType);
-
-    /**
-     * Determine the animation to run for a transition after display
-     * metrics changed.
-     *
-     * @param anim The exiting animation resource id is stored in anim[0], the
-     * entering animation resource id is stored in anim[1].
-     */
-    public void selectDisplayMetricsUpdateAnimationLw(int anim[]);
-
-    /**
-     * A window animation has been scheduled
-     */
-    public void windowAnimationStarted();
-
-    /**
-     * Animating windows has finished
-     */
-    public void windowAnimationFinished();
 }

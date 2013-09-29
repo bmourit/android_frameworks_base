@@ -685,6 +685,38 @@ public class Intent implements Parcelable, Cloneable {
     @SdkConstant(SdkConstantType.ACTIVITY_INTENT_ACTION)
     public static final String ACTION_CREATE_SHORTCUT = "android.intent.action.CREATE_SHORTCUT";
 
+	/**
+     *  Global Action: Shows power menu dialog
+     *  <p>Input: nothing
+     *  <p>Output: nothing
+     *  @hide
+     */
+    public static final String ACTION_POWERMENU = "android.intent.action.POWERMENU";
+    
+    /**
+     *  Global Action: Shows power menu reboot dialog
+     *  <p>Input: nothing
+     *  <p>Output: nothing
+     *  @hide
+     */
+    public static final String ACTION_POWERMENU_REBOOT = "android.intent.action.POWERMENU_REBOOT";
+
+    /**
+     *  Global Action: Shows power menu profile toggle dialog
+     *  <p>Input: nothing
+     *  <p>Output: nothing
+     *  @hide
+     */
+    public static final String ACTION_POWERMENU_PROFILE = "android.intent.action.POWERMENU_PROFILE";
+
+    /**
+     * PhoneWindowManager: Take Screenshot via takeScreenshot()
+     *  <p>Input: nothing
+     *  <p>Output: nothing
+     *  @hide
+     */
+    public static final String ACTION_SCREENSHOT = "android.intent.action.SCREENSHOT";
+
     /**
      * The name of the extra used to define the Intent of a shortcut.
      *
@@ -3532,6 +3564,11 @@ public class Intent implements Parcelable, Cloneable {
      * saw.   This can only be used in conjunction with {@link #FLAG_ACTIVITY_NEW_TASK}.
      */
     public static final int FLAG_ACTIVITY_TASK_ON_HOME = 0X00004000;
+    /**
+     * If set, this intent will always match start up as a floating window
+     * in mutil window scenarios.
+     */
+    public static final int FLAG_FLOATING_WINDOW = 0x00002000; 	
     /**
      * If set, when sending a broadcast only registered receivers will be
      * called -- no BroadcastReceiver components will be launched.

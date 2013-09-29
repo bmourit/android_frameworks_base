@@ -21,6 +21,7 @@ import com.android.internal.statusbar.StatusBarIcon;
 import com.android.systemui.statusbar.BaseStatusBar;
 
 import android.os.IBinder;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.view.WindowManager;
@@ -58,7 +59,6 @@ public class TvStatusBar extends BaseStatusBar {
 
     @Override
     public void disable(int state) {
-        propagateDisabledFlags(state);
     }
 
     @Override
@@ -75,7 +75,6 @@ public class TvStatusBar extends BaseStatusBar {
 
     @Override
     public void topAppWindowChanged(boolean visible) {
-        propagateMenuVisibility(visible);
     }
 
     @Override
@@ -87,12 +86,43 @@ public class TvStatusBar extends BaseStatusBar {
     }
 
     @Override
+    public void toggleNotificationShade() {
+    }
+
+    @Override
+    public void toggleQSShade() {
+    }
+
+    @Override
+    public void toggleStatusBar(boolean enable) {
+    }
+
+    @Override
+    protected void onBarTouchEvent(MotionEvent ev) {
+    }
+
+    @Override
+    protected void showBar(boolean showSearch){
+    }
+
+    @Override
+    protected void setSearchLightOn(boolean on){
+    }
+
+    @Override
+    public void setImeShowStatus(boolean enabled) {
+    }
+
+    @Override
+    public void setAutoRotate(boolean enabled) {
+    }
+
+    @Override
     public void toggleRecentApps() {
     }
 
     @Override // CommandQueue
     public void setNavigationIconHints(int hints) {
-        propagateNavigationIconHints(hints);
     }
 
     @Override
@@ -151,7 +181,7 @@ public class TvStatusBar extends BaseStatusBar {
     }
 
     @Override
-    public void animateExpandSettingsPanel() {
+    public void animateExpandSettingsPanel(boolean flip) {
     }
 
     @Override

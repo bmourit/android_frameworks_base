@@ -2173,6 +2173,10 @@ public final class WebViewClassic implements WebViewProvider, WebViewProvider.Sc
             mAccessibilityInjector.destroy();
             mAccessibilityInjector = null;
         }
+        if (mSavePasswordDialog != null) {
+            mSavePasswordDialog.dismiss();
+            mSavePasswordDialog = null;
+        }
         if (mWebViewCore != null) {
             // Tell WebViewCore to destroy itself
             synchronized (this) {
@@ -3852,7 +3856,7 @@ public final class WebViewClassic implements WebViewProvider, WebViewProvider.Sc
             invalidate();  // So we draw again
 
             if (!mScroller.isFinished()) {
-                mSendScroll.setPostpone(true);
+				mSendScroll.setPostpone(true);
                 int rangeX = computeMaxScrollX();
                 int rangeY = computeMaxScrollY();
                 int overflingDistance = mOverflingDistance;
@@ -3880,7 +3884,7 @@ public final class WebViewClassic implements WebViewProvider, WebViewProvider.Sc
                 if (mOverScrollGlow != null) {
                     mOverScrollGlow.absorbGlow(x, y, oldX, oldY, rangeX, rangeY);
                 }
-                mSendScroll.setPostpone(false);
+                mSendScroll.setPostpone(true);
             } else {
                 if (mTouchMode == TOUCH_DRAG_LAYER_MODE) {
                     // Update the layer position instead of WebView.
@@ -4485,13 +4489,6 @@ public final class WebViewClassic implements WebViewProvider, WebViewProvider.Sc
         return selectText(x, y);
     }
 
-    public void clearSelection() {
-        selectionDone();
-        if (mWebViewCore != null) {
-            mWebViewCore.sendMessage(EventHub.CLEAR_SELECT_TEXT);
-        }
-    }
-
     /**
      * Select the word at the indicated content coordinates.
      */
@@ -4509,7 +4506,7 @@ public final class WebViewClassic implements WebViewProvider, WebViewProvider.Sc
     public void onConfigurationChanged(Configuration newConfig) {
         mCachedOverlappingActionModeHeight = -1;
         if (mSelectingText && mOrientation != newConfig.orientation) {
-            clearSelection();
+            selectionDone();
         }
         mOrientation = newConfig.orientation;
         if (mWebViewCore != null && !mBlockWebkitViewMessages) {
@@ -5739,14 +5736,15 @@ public final class WebViewClassic implements WebViewProvider, WebViewProvider.Sc
             }
         }
     }
-
     SendScrollToWebCore mSendScroll = new SendScrollToWebCore();
+
 
     @Override
     public void onScrollChanged(int l, int t, int oldl, int oldt) {
-        mSendScroll.send(false);
-
+		mSendScroll.send(false);
+		
         if (!mInOverScrollMode) {
+  
             // update WebKit if visible title bar height changed. The logic is same
             // as getVisibleTitleHeightImpl.
             int titleHeight = getTitleHeight();

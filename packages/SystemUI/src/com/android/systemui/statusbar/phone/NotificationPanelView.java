@@ -17,37 +17,43 @@
 package com.android.systemui.statusbar.phone;
 
 import android.content.Context;
+import android.content.ContentResolver;
 import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
-import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.AttributeSet;
-import android.util.EventLog;
 import android.util.Slog;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityEvent;
+import android.database.ContentObserver;
+import android.net.Uri;
+import android.os.Handler;
 
-import com.android.systemui.EventLogTags;
 import com.android.systemui.R;
 import com.android.systemui.statusbar.GestureRecorder;
 
 public class NotificationPanelView extends PanelView {
-    public static final boolean DEBUG_GESTURES = true;
 
-    private static final float STATUS_BAR_SETTINGS_LEFT_PERCENTAGE = 0.8f;
-    private static final float STATUS_BAR_SETTINGS_RIGHT_PERCENTAGE = 0.2f;
+    private static final float STATUS_BAR_SETTINGS_FLIP_PERCENTAGE_RIGHT = 0.40f;
+    private static final float STATUS_BAR_SETTINGS_FLIP_PERCENTAGE_LEFT = 0.60f;
     private static final float STATUS_BAR_SWIPE_TRIGGER_PERCENTAGE = 0.05f;
     private static final float STATUS_BAR_SWIPE_VERTICAL_MAX_PERCENTAGE = 0.025f;
     private static final float STATUS_BAR_SWIPE_MOVE_PERCENTAGE = 0.2f;
 
-    private Drawable mHandleBar;
-    private int mHandleBarHeight;
-    private View mHandleView;
-    private int mFingers;
-    private PhoneStatusBar mStatusBar;
-    private boolean mOkToFlip;
+    Drawable mHandleBar;
+    int mHandleBarHeight;
+    View mHandleView;
+    int mFingers;
+    PhoneStatusBar mStatusBar;
+    boolean mOkToFlip;
+    boolean mFastToggleEnabled;
+    int mFastTogglePos;
+    ContentObserver mEnableObserver;
+    ContentObserver mChangeSideObserver;
+    int mToggleStyle;
+    Handler mHandler = new Handler();
 
     private float mGestureStartX;
     private float mGestureStartY;
@@ -72,11 +78,60 @@ public class NotificationPanelView extends PanelView {
         mHandleBar = resources.getDrawable(R.drawable.status_bar_close);
         mHandleBarHeight = resources.getDimensionPixelSize(R.dimen.close_handle_height);
         mHandleView = findViewById(R.id.handle);
+
+        setContentDescription(resources.getString(
+                R.string.accessibility_desc_notification_shade));
+
+        final ContentResolver resolver = getContext().getContentResolver();
+        mEnableObserver = new ContentObserver(mHandler) {
+            @Override
+            public void onChange(boolean selfChange) {
+                mFastToggleEnabled = Settings.System.getBoolean(resolver,
+                        Settings.System.FAST_TOGGLE, false);
+                mToggleStyle = Settings.System.getInt(resolver,
+                        Settings.System.TOGGLES_STYLE, 0);
+            }
+        };
+
+        mChangeSideObserver = new ContentObserver(mHandler) {
+            @Override
+            public void onChange(boolean selfChange) {
+                mFastTogglePos = Settings.System.getInt(resolver,
+                        Settings.System.CHOOSE_FASTTOGGLE_SIDE, 1);
+            }
+        };
+
+        // Initialization
+        mFastToggleEnabled = Settings.System.getBoolean(resolver,
+                Settings.System.FAST_TOGGLE, false);
+        mFastTogglePos = Settings.System.getInt(resolver,
+                Settings.System.CHOOSE_FASTTOGGLE_SIDE, 1);
+        mToggleStyle = Settings.System.getInt(resolver,
+                Settings.System.TOGGLES_STYLE, 0);
+
+        resolver.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.FAST_TOGGLE),
+                true, mEnableObserver);
+        resolver.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.TOGGLES_STYLE),
+                true, mEnableObserver);
+
+        resolver.registerContentObserver(
+                Settings.System.getUriFor(Settings.System.CHOOSE_FASTTOGGLE_SIDE),
+                true, mChangeSideObserver);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        getContext().getContentResolver().unregisterContentObserver(mEnableObserver);
+        getContext().getContentResolver().unregisterContentObserver(mChangeSideObserver);
+        super.onDetachedFromWindow();
     }
 
     @Override
     public void fling(float vel, boolean always) {
-        GestureRecorder gr = ((PhoneStatusBarView) mBar).mBar.getGestureRecorder();
+        GestureRecorder gr =
+                ((PhoneStatusBarView) mBar).mBar.getGestureRecorder();
         if (gr != null) {
             gr.tag(
                 "fling " + ((vel > 0) ? "open" : "closed"),
@@ -96,7 +151,8 @@ public class NotificationPanelView extends PanelView {
         return super.dispatchPopulateAccessibilityEvent(event);
     }
 
-    // We draw the handle ourselves so that it's always glued to the bottom of the window.
+    // We draw the handle ourselves so that it's
+    // always glued to the bottom of the window.
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
@@ -120,35 +176,44 @@ public class NotificationPanelView extends PanelView {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         boolean shouldRecycleEvent = false;
-        if (DEBUG_GESTURES) {
-            if (event.getActionMasked() != MotionEvent.ACTION_MOVE) {
-                EventLog.writeEvent(EventLogTags.SYSUI_NOTIFICATIONPANEL_TOUCH,
-                       event.getActionMasked(), (int) event.getX(), (int) event.getY());
-            }
-        }
         if (PhoneStatusBar.SETTINGS_DRAG_SHORTCUT && mStatusBar.mHasFlipSettings) {
-            boolean flip = false;
+            boolean shouldFlip = false;
             boolean swipeFlipJustFinished = false;
             boolean swipeFlipJustStarted = false;
             switch (event.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
+                    if (mStatusBar.mHideSettingsPanel)
+                        break;
                     mGestureStartX = event.getX(0);
                     mGestureStartY = event.getY(0);
-                    mTrackingSwipe = isFullyExpanded() &&
-                        // Pointer is at the handle portion of the view?
-                        mGestureStartY > getHeight() - mHandleBarHeight - getPaddingBottom();
+                    mTrackingSwipe = isFullyExpanded();
                     mOkToFlip = getExpandedHeight() == 0;
-                    if (event.getX(0) > getWidth() * (1.0f - STATUS_BAR_SETTINGS_RIGHT_PERCENTAGE) &&
-                            Settings.System.getIntForUser(getContext().getContentResolver(),
-                                    Settings.System.QS_QUICK_PULLDOWN, 0, UserHandle.USER_CURRENT) == 1) {
-                        flip = true;
-                    } else if (event.getX(0) < getWidth() * (1.0f - STATUS_BAR_SETTINGS_LEFT_PERCENTAGE) &&
-                            Settings.System.getIntForUser(getContext().getContentResolver(),
-                                    Settings.System.QS_QUICK_PULLDOWN, 0, UserHandle.USER_CURRENT) == 2) {
-                        flip = true;
+                    if(mToggleStyle != 0) {
+                        // don't allow settings panel with non-tile toggles
+                        shouldFlip = false;
+                        break;
+                    }
+                    if (mFastTogglePos == 1) {
+                        if ((event.getX(0) > getWidth()
+                                * (1.0f - STATUS_BAR_SETTINGS_FLIP_PERCENTAGE_RIGHT)
+                                && mFastToggleEnabled)
+                            || (mStatusBar.skipToSettingsPanel())
+                                && !mFastToggleEnabled) {
+                            shouldFlip = true;
+                        }
+                    } else if (mFastTogglePos == 2) {
+                        if ((event.getX(0) < getWidth()
+                                * (1.0f - STATUS_BAR_SETTINGS_FLIP_PERCENTAGE_LEFT)
+                                && mFastToggleEnabled)
+                            || (mStatusBar.skipToSettingsPanel())
+                                && !mFastToggleEnabled) {
+                            shouldFlip = true;
+                        }
                     }
                     break;
                 case MotionEvent.ACTION_MOVE:
+                    if (mStatusBar.mHideSettingsPanel)
+                        break;
                     final float deltaX = Math.abs(event.getX(0) - mGestureStartX);
                     final float deltaY = Math.abs(event.getY(0) - mGestureStartY);
                     final float maxDeltaY = getHeight() * STATUS_BAR_SWIPE_VERTICAL_MAX_PERCENTAGE;
@@ -181,7 +246,8 @@ public class NotificationPanelView extends PanelView {
                     }
                     break;
                 case MotionEvent.ACTION_POINTER_DOWN:
-                    flip = true;
+                    if (!mStatusBar.mHideSettingsPanel)
+                        shouldFlip = true;
                     break;
                 case MotionEvent.ACTION_UP:
                     swipeFlipJustFinished = mSwipeTriggered;
@@ -189,22 +255,13 @@ public class NotificationPanelView extends PanelView {
                     mTrackingSwipe = false;
                     break;
             }
-            if (mOkToFlip && flip) {
-                float miny = event.getY(0);
-                float maxy = miny;
-                for (int i=1; i<event.getPointerCount(); i++) {
-                    final float y = event.getY(i);
-                    if (y < miny) miny = y;
-                    if (y > maxy) maxy = y;
+            if (mOkToFlip && shouldFlip && !mStatusBar.mHideSettingsPanel) {
+                if (mJustPeeked || getExpandedHeight() < mHandleBarHeight) {
+                    mStatusBar.switchToSettings();
+                } else {
+                    mStatusBar.flipToSettings();
                 }
-                if (maxy - miny < mHandleBarHeight) {
-                    if (mJustPeeked || getExpandedHeight() < mHandleBarHeight) {
-                        mStatusBar.switchToSettings();
-                    } else {
-                        mStatusBar.flipToSettings();
-                    }
-                    mOkToFlip = false;
-                }
+                mOkToFlip = false;
             } else if (mSwipeTriggered) {
                 final float deltaX = (event.getX(0) - mGestureStartX) * mSwipeDirection;
                 mStatusBar.partialFlip(mFlipOffset +

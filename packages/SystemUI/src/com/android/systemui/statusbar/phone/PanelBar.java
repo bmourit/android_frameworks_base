@@ -19,6 +19,7 @@ package com.android.systemui.statusbar.phone;
 import java.util.ArrayList;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Slog;
 import android.view.MotionEvent;
@@ -42,6 +43,7 @@ public class PanelBar extends FrameLayout {
     PanelView mTouchingPanel;
     private int mState = STATE_CLOSED;
     private boolean mTracking;
+    PanelView mFullyOpenedPanel;
 
     float mPanelExpandedFractionSum;
 
@@ -78,6 +80,18 @@ public class PanelBar extends FrameLayout {
                 addPanel((PanelView) v);
             }
         }
+    }
+
+    /*
+     * ]0 < alpha < 1[
+     */
+    public void setBackgroundAlpha(float alpha) {
+        Drawable bg = getBackground();
+        if (bg == null)
+            return;
+
+        int a = (int) (alpha * 255);
+        bg.setAlpha(a);
     }
 
     public float getBarHeight() {
@@ -183,6 +197,8 @@ public class PanelBar extends FrameLayout {
 
         if (DEBUG) LOG("panelExpansionChanged: end state=%d [%s%s ]", mState,
                 (fullyOpenedPanel!=null)?" fullyOpened":"", fullyClosed?" fullyClosed":"");
+
+        mFullyOpenedPanel = fullyOpenedPanel;
     }
 
     public void collapseAllPanels(boolean animate) {

@@ -23,25 +23,31 @@ import com.android.internal.telephony.TelephonyIntents;
 import com.android.internal.telephony.TelephonyProperties;
 import com.android.internal.R;
 
+import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.ActivityManagerNative;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.Profile;
 import android.app.ProfileManager;
+import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
-import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.UserInfo;
+import android.content.ServiceConnection;
 import android.database.ContentObserver;
+import android.hardware.input.InputManager;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.Messenger;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.SystemClock;
@@ -50,14 +56,20 @@ import android.os.UserHandle;
 import android.os.UserManager;
 import android.os.Vibrator;
 import android.provider.Settings;
+import android.provider.Settings.SettingNotFoundException;
 import android.service.dreams.DreamService;
 import android.service.dreams.IDreamManager;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
+import android.util.AttributeSet;
+import android.view.LayoutInflater;
 import android.util.Log;
+import android.util.Slog;
 import android.util.TypedValue;
 import android.view.InputDevice;
+import android.view.IWindowManager;
+import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -73,6 +85,7 @@ import android.widget.ImageView.ScaleType;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.google.android.collect.Lists;
 import com.android.internal.app.ThemeUtils;
 
 import java.util.ArrayList;
@@ -104,6 +117,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
     private final WindowManagerFuncs mWindowManagerFuncs;
 
     private Context mUiContext;
+
     private final AudioManager mAudioManager;
     private final IDreamManager mDreamManager;
 
@@ -113,6 +127,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
     private Action mSilentModeAction;
     private ToggleAction mAirplaneModeOn;
     private ToggleAction mExpandDesktopModeOn;
+    private NavBarAction mNavBarHideToggle;
 
     private MyAdapter mAdapter;
 
@@ -122,8 +137,11 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
     private boolean mIsWaitingForEcmExit = false;
     private boolean mHasTelephony;
     private boolean mHasVibrator;
-    private Profile mChosenProfile;
+    private boolean mEnableTorchToggle = false;
     private final boolean mShowSilentToggle;
+
+    private Profile mChosenProfile;
+    private boolean mEnableNavBarHideToggle = true;
 
     /**
      * @param context everything needs a context :(
@@ -246,6 +264,13 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
         };
         onExpandDesktopModeChanged();
 
+        mEnableTorchToggle = Settings.System.getBoolean(mContext.getContentResolver(),
+                Settings.System.POWER_MENU_TORCH_ENABLED, false);
+
+        mEnableNavBarHideToggle= Settings.System.getBoolean(mContext.getContentResolver(),
+                Settings.System.POWER_DIALOG_SHOW_NAVBAR_HIDE, false);
+        mNavBarHideToggle = new NavBarAction(mHandler);
+
         mAirplaneModeOn = new ToggleAction(
                 R.drawable.ic_lock_airplane_mode,
                 R.drawable.ic_lock_airplane_mode_off,
@@ -289,7 +314,6 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
         };
         onAirplaneModeChanged();
 
-        final ContentResolver cr = mContext.getContentResolver();
         mItems = new ArrayList<Action>();
 
         // first: power off
@@ -314,9 +338,8 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
 
         // next: reboot
         // only shown if enabled, enabled by default
-        boolean showReboot = Settings.System.getIntForUser(cr,
-                Settings.System.POWER_MENU_REBOOT_ENABLED, 1, UserHandle.USER_CURRENT) == 1;
-        if (showReboot) {
+        if (Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.POWER_MENU_REBOOT_ENABLED, 1) == 1) {
             mItems.add(
                 new SinglePressAction(R.drawable.ic_lock_reboot, R.string.global_action_reboot) {
                     public void onPress() {
@@ -338,78 +361,15 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                 });
         }
 
-        // next: profile
-        // only shown if both system profiles and the menu item is enabled, enabled by default
-        boolean showProfiles =
-                Settings.System.getIntForUser(cr,
-                        Settings.System.SYSTEM_PROFILES_ENABLED, 1, UserHandle.USER_CURRENT) == 1
-                && Settings.System.getIntForUser(cr,
-                        Settings.System.POWER_MENU_PROFILES_ENABLED, 1, UserHandle.USER_CURRENT) == 1;
-        if (showProfiles) {
-            mItems.add(
-                new ProfileChooseAction() {
-                    public void onPress() {
-                        createProfileDialog();
-                    }
-
-                    public boolean onLongPress() {
-                        return true;
-                    }
-
-                    public boolean showDuringKeyguard() {
-                        return false;
-                    }
-
-                    public boolean showBeforeProvisioning() {
-                        return false;
-                    }
-                });
-        }
-
-        // next: screenshot
-        // only shown if enabled, disabled by default
-        boolean showScreenshot = Settings.System.getIntForUser(cr,
-                Settings.System.POWER_MENU_SCREENSHOT_ENABLED, 0, UserHandle.USER_CURRENT) == 1;
-        if (showScreenshot) {
-            mItems.add(
-                new SinglePressAction(R.drawable.ic_lock_screenshot, R.string.global_action_screenshot) {
-                    public void onPress() {
-                        takeScreenshot();
-                    }
-
-                    public boolean showDuringKeyguard() {
-                        return true;
-                    }
-
-                    public boolean showBeforeProvisioning() {
-                        return true;
-                    }
-                });
-        }
-
-        // next: expanded desktop toggle
-        // only shown if enabled and expanded desktop is enabled, disabled by default
-        boolean showExpandedDesktop =
-                Settings.System.getIntForUser(cr,
-                        Settings.System.EXPANDED_DESKTOP_STYLE, 0, UserHandle.USER_CURRENT) != 0
-                && Settings.System.getIntForUser(cr,
-                        Settings.System.POWER_MENU_EXPANDED_DESKTOP_ENABLED, 0, UserHandle.USER_CURRENT) == 1;
-
-        if (showExpandedDesktop) {
-            mItems.add(mExpandDesktopModeOn);
-        }
-
         // next: airplane mode
-        boolean showAirplaneMode = Settings.System.getIntForUser(cr,
-                Settings.System.POWER_MENU_AIRPLANE_ENABLED, 1, UserHandle.USER_CURRENT) == 1;
-        if (showAirplaneMode) {
+        if (Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.POWER_MENU_AIRPLANE_ENABLED, 1) == 1) {
             mItems.add(mAirplaneModeOn);
         }
 
         // next: bug report, if enabled
-        boolean showBugReport = Settings.Global.getInt(cr,
-                Settings.Global.BUGREPORT_IN_POWER_MENU, 0) != 0;
-        if (showBugReport) {
+        if (Settings.Global.getInt(mContext.getContentResolver(),
+                Settings.Global.BUGREPORT_IN_POWER_MENU, 0) != 0) {
             mItems.add(
                 new SinglePressAction(com.android.internal.R.drawable.stat_sys_adb,
                         R.string.global_action_bug_report) {
@@ -456,18 +416,98 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                 });
         }
 
+        // next: expanded desktop toggle
+        // only shown if enabled, disabled by default
+        if (Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.POWER_MENU_EXPANDED_DESKTOP_ENABLED, 0) == 1) {
+            mItems.add(mExpandDesktopModeOn);
+        }
+
+        // next: profile
+        // only shown if both system profiles and the menu item is enabled, enabled by default
+        if ((Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.SYSTEM_PROFILES_ENABLED, 1) == 1) &&
+                (Settings.System.getInt(mContext.getContentResolver(),
+                        Settings.System.POWER_MENU_PROFILES_ENABLED, 1) == 1)) {
+            mItems.add(
+                new ProfileChooseAction() {
+                    public void onPress() {
+                        showProfileDialog();
+                    }
+
+                    public boolean onLongPress() {
+                        return true;
+                    }
+
+                    public boolean showDuringKeyguard() {
+                        return false;
+                    }
+
+                    public boolean showBeforeProvisioning() {
+                        return false;
+                    }
+                });
+        }
+
         // next: optionally add a list of users to switch to
-        boolean showUsers = Settings.System.getIntForUser(cr,
-                Settings.System.POWER_MENU_USER_ENABLED, 0, UserHandle.USER_CURRENT) == 1;
-        if (showUsers) {
+        if (Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.POWER_MENU_USER_ENABLED, 0) == 1) {
             addUsersToMenu(mItems);
         }
 
-        // last: silent mode
-        boolean showSoundMode = SHOW_SILENT_TOGGLE && Settings.System.getIntForUser(cr,
-                Settings.System.POWER_MENU_SOUND_ENABLED, 1, UserHandle.USER_CURRENT) == 1;
-        if (showSoundMode) {
+        // next: screenshot
+        // only shown if enabled, disabled by default
+        if (Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.POWER_MENU_SCREENSHOT_ENABLED, 0) == 1) {
+            mItems.add(
+                new SinglePressAction(R.drawable.ic_lock_screenshot, R.string.global_action_screenshot) {
+                    public void onPress() {
+                        takeScreenshot();
+                    }
+
+                    public boolean showDuringKeyguard() {
+                        return true;
+                    }
+
+                    public boolean showBeforeProvisioning() {
+                        return true;
+                    }
+                });
+        }
+
+        // next: Torch
+        if (mEnableTorchToggle) {
+            Slog.e(TAG, "Adding torch");
+            mItems.add(new SinglePressAction(com.android.internal.R.drawable.ic_lock_torch,
+                    R.string.global_action_torch) {
+                public void onPress() {
+                    Intent i = new Intent("net.cactii.flash2.TOGGLE_FLASHLIGHT");
+                    i.putExtra("bright", false);
+                   mContext.sendBroadcast(i);
+                }
+
+                public boolean showDuringKeyguard() {
+                    return true;
+                }
+
+                public boolean showBeforeProvisioning() {
+                    return true;
+                }
+            });
+        } else {
+            Slog.e(TAG, "Not adding torch");
+        }
+
+        // net: silent mode
+        if ((Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.POWER_MENU_SOUND_ENABLED, 1) == 1) &&
+                (mShowSilentToggle)) {
             mItems.add(mSilentModeAction);
+        }
+
+        // last NavBar Hide
+        if (mEnableNavBarHideToggle) {
+            mItems.add(mNavBarHideToggle);
         }
 
         mAdapter = new MyAdapter();
@@ -538,26 +578,25 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
         }
     }
 
-    private void createProfileDialog() {
-        final ProfileManager profileManager = (ProfileManager) mContext
-                .getSystemService(Context.PROFILE_SERVICE);
+    public void showProfileDialog(){
+        final ProfileManager profileManager = (ProfileManager)mContext.getSystemService(Context.PROFILE_SERVICE);
 
         final Profile[] profiles = profileManager.getProfiles();
         UUID activeProfile = profileManager.getActiveProfile().getUuid();
         final CharSequence[] names = new CharSequence[profiles.length];
 
-        int i = 0;
+        int i=0;
         int checkedItem = 0;
 
-        for (Profile profile : profiles) {
-            if (profile.getUuid().equals(activeProfile)) {
+        for(Profile profile : profiles) {
+            if(profile.getUuid().equals(activeProfile)) {
                 checkedItem = i;
                 mChosenProfile = profile;
             }
             names[i++] = profile.getName();
         }
 
-        final AlertDialog.Builder ab = new AlertDialog.Builder(getUiContext());
+        final AlertDialog.Builder ab = new AlertDialog.Builder(mContext);
 
         AlertDialog dialog = ab.setSingleChoiceItems(names, checkedItem,
                 new DialogInterface.OnClickListener() {
@@ -574,8 +613,8 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
     }
 
     /**
-     * functions needed for taking screenhots.
-     * This leverages the built in ICS screenshot functionality
+     * functions needed for taking screenhots.  
+     * This leverages the built in ICS screenshot functionality 
      */
     final Object mScreenshotLock = new Object();
     ServiceConnection mScreenshotConnection = null;
@@ -630,14 +669,14 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                             msg.arg1 = 1;
                         if (mNavigationBar != null && mNavigationBar.isVisibleLw())
                             msg.arg2 = 1;
-                         */
+                         */                        
 
                         /* wait for the dialog box to close */
                         try {
-                            Thread.sleep(1000);
+                            Thread.sleep(1000); 
                         } catch (InterruptedException ie) {
                         }
-
+                        
                         /* take the screenshot */
                         try {
                             messenger.send(msg);
@@ -655,7 +694,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
             }
         }
     }
-
+    
     private void prepareDialog() {
         refreshSilentMode();
         mAirplaneModeOn.updateState(mAirplaneState);
@@ -1131,6 +1170,134 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
         }
     }
 
+    private static class NavBarAction implements Action, View.OnClickListener {
+
+        private final int[] ITEM_IDS = { R.id.navbarstatus, R.id.navbartoggle, R.id.navbarhome, R.id.navbarback,R.id.navbarmenu };
+
+        public Context mContext;
+        public boolean mNavbarVisible;
+        public boolean mNavbarStatusInvisible;
+        private final Handler mHandler;
+        private int mInjectKeycode;
+        long mDownTime;
+
+        NavBarAction(Handler handler) {
+            mHandler = handler;
+        }
+
+
+        public View create(Context context, View convertView, ViewGroup parent,
+                LayoutInflater inflater) {
+            mContext = context;
+            mNavbarVisible = Settings.System.getBoolean(mContext.getContentResolver(),
+                    Settings.System.NAVIGATION_BAR_SHOW_NOW, false);
+            mNavbarStatusInvisible = Settings.System.getBoolean(mContext.getContentResolver(),
+                    Settings.System.STATUSBAR_HIDDEN, false);        
+
+            View v = inflater.inflate(R.layout.global_actions_navbar_mode, parent, false);
+
+            for (int i = 0; i < 5; i++) {
+                View itemView = v.findViewById(ITEM_IDS[i]);
+                itemView.setSelected((i==0)&&(!mNavbarStatusInvisible)||(i==1)&&(mNavbarVisible));
+                // Set up click handler
+                itemView.setTag(i);
+                itemView.setOnClickListener(this);
+            }
+            return v;
+        }
+
+        public void onPress() {
+        }
+
+        public boolean onLongPress() {
+            return false;
+        }
+
+        public boolean showDuringKeyguard() {
+            return false;
+        }
+
+        public boolean showBeforeProvisioning() {
+            return false;
+        }
+
+        public boolean isEnabled() {
+            return true;
+        }
+
+        void willCreate() {
+        }
+
+        public void onClick(View v) {
+            if (!(v.getTag() instanceof Integer)) return;
+
+            int index = (Integer) v.getTag();
+
+            switch (index) {
+
+            case 0 :
+                mNavbarStatusInvisible = !mNavbarStatusInvisible;
+                Settings.System.putBoolean(mContext.getContentResolver(),
+                        Settings.System.STATUSBAR_HIDDEN,
+                         mNavbarStatusInvisible );
+                v.setSelected(mNavbarStatusInvisible);
+                mHandler.sendEmptyMessage(MESSAGE_DISMISS);
+                break;
+            case 1 :
+                mNavbarVisible = !mNavbarVisible;
+                Settings.System.putBoolean(mContext.getContentResolver(),
+                        Settings.System.NAVIGATION_BAR_SHOW_NOW,
+                         mNavbarVisible );
+                v.setSelected(mNavbarVisible);
+                mHandler.sendEmptyMessage(MESSAGE_DISMISS);
+                break;
+
+            case 2:
+                injectKeyDelayed(KeyEvent.KEYCODE_HOME,SystemClock.uptimeMillis());
+                break;
+
+            case 3:
+                injectKeyDelayed(KeyEvent.KEYCODE_BACK,SystemClock.uptimeMillis());
+                break;
+
+            case 4:
+                injectKeyDelayed(KeyEvent.KEYCODE_MENU,SystemClock.uptimeMillis());
+                break;
+            }
+        }
+        public void injectKeyDelayed(int keycode,long downtime){
+            mInjectKeycode = keycode;
+            mDownTime = downtime;
+            mHandler.sendEmptyMessage(MESSAGE_DISMISS);
+            mHandler.removeCallbacks(onInjectKey_Down);
+            mHandler.removeCallbacks(onInjectKey_Up);
+            mHandler.postDelayed(onInjectKey_Down,25);// wait a few ms to let Dialog dismiss
+            mHandler.postDelayed(onInjectKey_Up,50); // introduce small delay to handle key press
+        }
+
+        final Runnable onInjectKey_Down = new Runnable() {
+            public void run() {
+                final KeyEvent ev = new KeyEvent(mDownTime, SystemClock.uptimeMillis(), KeyEvent.ACTION_DOWN, mInjectKeycode, 0,
+                        0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0,
+                        KeyEvent.FLAG_FROM_SYSTEM | KeyEvent.FLAG_VIRTUAL_HARD_KEY,
+                        InputDevice.SOURCE_KEYBOARD);
+                InputManager.getInstance().injectInputEvent(ev,
+                        InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_RESULT);
+            }
+        };
+
+        final Runnable onInjectKey_Up = new Runnable() {
+            public void run() {
+                final KeyEvent ev = new KeyEvent(mDownTime, SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, mInjectKeycode, 0,
+                        0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0,
+                        KeyEvent.FLAG_FROM_SYSTEM | KeyEvent.FLAG_VIRTUAL_HARD_KEY,
+                        InputDevice.SOURCE_KEYBOARD);
+                InputManager.getInstance().injectInputEvent(ev,
+                        InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_RESULT);
+            }
+        };
+    }
+
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -1164,8 +1331,12 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
             if (!mHasTelephony) return;
             final boolean inAirplaneMode = serviceState.getState() == ServiceState.STATE_POWER_OFF;
             mAirplaneState = inAirplaneMode ? ToggleAction.State.On : ToggleAction.State.Off;
-            mAirplaneModeOn.updateState(mAirplaneState);
-            mAdapter.notifyDataSetChanged();
+            if (mAirplaneModeOn != null) {
+                mAirplaneModeOn.updateState(mAirplaneState);
+            }
+            if (mAdapter != null) {
+                mAdapter.notifyDataSetChanged();
+            }
         }
     };
 
@@ -1222,10 +1393,10 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
     }
 
     private void onExpandDesktopModeChanged() {
-        boolean expandDesktopModeOn = Settings.System.getIntForUser(
+        boolean expandDesktopModeOn = Settings.System.getInt(
                 mContext.getContentResolver(),
                 Settings.System.EXPANDED_DESKTOP_STATE,
-                0, UserHandle.USER_CURRENT) == 1;
+                0) == 1;
         mExpandDesktopModeOn.updateState(expandDesktopModeOn ? ToggleAction.State.On : ToggleAction.State.Off);
     }
 
@@ -1250,10 +1421,10 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
      * Change the expand desktop mode system setting
      */
     private void changeExpandDesktopModeSystemSetting(boolean on) {
-        Settings.System.putIntForUser(
+        Settings.System.putInt(
                 mContext.getContentResolver(),
                 Settings.System.EXPANDED_DESKTOP_STATE,
-                on ? 1 : 0, UserHandle.USER_CURRENT);
+                on ? 1 : 0);
     }
 
     private static final class GlobalActionsDialog extends Dialog implements DialogInterface {
