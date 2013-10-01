@@ -38,7 +38,8 @@ LOCAL_SHARED_LIBRARIES := \
     libusbhost \
     libexif \
     libstagefright_amrnb_common \
-
+    libalc \
+	
 LOCAL_REQUIRED_MODULES := \
     libexif_jni
 
@@ -46,6 +47,7 @@ LOCAL_STATIC_LIBRARIES := \
     libstagefright_amrnbenc
 
 LOCAL_C_INCLUDES += \
+    $(call include-path-for, alsp) \
     external/jhead \
     external/tremor/Tremor \
     frameworks/base/core/jni \
