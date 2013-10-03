@@ -103,12 +103,23 @@ public interface WindowManagerPolicy {
     public final static String ACTION_HDMI_PLUGGED = "android.intent.action.HDMI_PLUGGED";
 
     /**
+     * Sticky broadcast of the current CVBS plugged state.
+     */
+    public final static String ACTION_CVBS_PLUGGED = "android.intent.action.CVBS_PLUGGED";
+    
+    /**
      * Extra in {@link #ACTION_HDMI_PLUGGED} indicating the state: true if
      * plugged in to HDMI, false if not.
      */
     public final static String EXTRA_HDMI_PLUGGED_STATE = "state";
 
     /**
+     * Extra in {@link #ACTION_CVBS_PLUGGED} indicating the state: true if
+     * plugged in to CVBS, false if not.
+     */
+    public final static String EXTRA_CVBS_PLUGGED_STATE = "state";
+
+     /**
      * Pass this event to the user / app.  To be returned from
      * {@link #interceptKeyBeforeQueueing}.
      */

@@ -37,13 +37,21 @@ LOCAL_SHARED_LIBRARIES := \
     libmtp \
     libusbhost \
     libexif \
-    libstagefright_amrnb_common \
+    libstagefright_amrnb_common
+
+#ifdef ACT_AUDIO
+LOCAL_SHARED_LIBRARIES += libalc
+#endif
 
 LOCAL_REQUIRED_MODULES := \
     libexif_jni
 
 LOCAL_STATIC_LIBRARIES := \
     libstagefright_amrnbenc
+
+#ifdef ACT_AUDIO
+LOCAL_C_INCLUDES += $(call include-path-for, alsp)
+#endif
 
 LOCAL_C_INCLUDES += \
     external/jhead \
