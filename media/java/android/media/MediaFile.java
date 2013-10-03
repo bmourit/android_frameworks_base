@@ -63,6 +63,7 @@ public class MediaFile {
     private static final int FIRST_AUDIO_FILE_TYPE2 = FILE_TYPE_DTS;
     private static final int LAST_AUDIO_FILE_TYPE2 = FILE_TYPE_DTS;
 
+
     // MIDI file types
     public static final int FILE_TYPE_MID     = 17;
     public static final int FILE_TYPE_SMF     = 18;
@@ -83,7 +84,9 @@ public class MediaFile {
     public static final int FILE_TYPE_WEBM    = 30;
     public static final int FILE_TYPE_DIVX    = 31;
     private static final int FIRST_VIDEO_FILE_TYPE = FILE_TYPE_MP4;
+#ifndef ACT_AUDIO
     private static final int LAST_VIDEO_FILE_TYPE = FILE_TYPE_DIVX;
+#endif
 
     // More video file types
     public static final int FILE_TYPE_MP2PS   = 200;
@@ -113,7 +116,26 @@ public class MediaFile {
     public static final int FILE_TYPE_FL      = 51;
     private static final int FIRST_DRM_FILE_TYPE = FILE_TYPE_FL;
     private static final int LAST_DRM_FILE_TYPE = FILE_TYPE_FL;
-
+#ifdef ACT_AUDIO
+//actions specific features
+//audio
+    public static final int FILE_TYPE_RM      = 52;
+    public static final int FILE_TYPE_DTS     = 53;
+    public static final int FILE_TYPE_AA      = 54;
+    public static final int FILE_TYPE_AIFF    = 55;
+    public static final int FILE_TYPE_MPC     = 56;
+    public static final int FILE_TYPE_ALAC    = 57;
+    public static final int FILE_TYPE_APE     = 58;
+    public static final int FILE_TYPE_FLAC    = 59;
+//video
+    public static final int FILE_TYPE_FLV     = 60;
+    public static final int FILE_TYPE_MPG     = 61;
+    public static final int FILE_TYPE_OGM     = 62;
+    public static final int FILE_TYPE_RMVB    = 63;
+    private static final int LAST_VIDEO_FILE_TYPE = FILE_TYPE_RMVB;
+//image
+    public static final int FILE_TYPE_TIFF    = 64;
+#endif
     // Other popular file types
     public static final int FILE_TYPE_TEXT          = 100;
     public static final int FILE_TYPE_HTML          = 101;
@@ -186,6 +208,10 @@ public class MediaFile {
 
     static {
         addFileType("MP3", FILE_TYPE_MP3, "audio/mpeg", MtpConstants.FORMAT_MP3);
+#ifdef ACT_AUDIO
+        addFileType("MP2", FILE_TYPE_MP3, "audio/mpeg", MtpConstants.FORMAT_MP3);
+        addFileType("MP1", FILE_TYPE_MP3, "audio/mpeg", MtpConstants.FORMAT_MP3);
+#endif
         addFileType("MPGA", FILE_TYPE_MP3, "audio/mpeg", MtpConstants.FORMAT_MP3);
         addFileType("M4A", FILE_TYPE_M4A, "audio/mp4", MtpConstants.FORMAT_MPEG);
         addFileType("WAV", FILE_TYPE_WAV, "audio/x-wav", MtpConstants.FORMAT_WAV);
@@ -204,7 +230,33 @@ public class MediaFile {
         addFileType("AAC", FILE_TYPE_AAC, "audio/aac", MtpConstants.FORMAT_AAC);
         addFileType("AAC", FILE_TYPE_AAC, "audio/aac-adts", MtpConstants.FORMAT_AAC);
         addFileType("MKA", FILE_TYPE_MKA, "audio/x-matroska");
-
+#ifdef ACT_AUDIO
+		addFileType("RM", FILE_TYPE_RM, "audio/x-pn-realaudio");
+		addFileType("RAM", FILE_TYPE_RM, "audio/x-pn-realaudio");
+        addFileType("DTS", FILE_TYPE_DTS, "audio/x-dts");
+        addFileType("AC3", FILE_TYPE_AC3, "audio/x-ac3");
+		addFileType("AA", FILE_TYPE_AA, "audio/audible");
+		addFileType("AAX", FILE_TYPE_AA, "audio/audible");
+		addFileType("FLAC", FILE_TYPE_FLAC, "audio/x-flac");
+        addFileType("APE", FILE_TYPE_APE, "audio/x-ape");
+ 
+		addFileType("DTS", FILE_TYPE_DTS, "audio/DTS");
+		addFileType("AC3", FILE_TYPE_AC3, "audio/AC3");
+		addFileType("MP3", FILE_TYPE_MP3, "audio/MP3");
+		addFileType("AAC", FILE_TYPE_AAC, "audio/AAC");
+		addFileType("AMR", FILE_TYPE_AMR, "audio/AMR");
+		addFileType("WMA", FILE_TYPE_WMA, "audio/WMASTD");
+		addFileType("WMA", FILE_TYPE_WMA, "audio/WMALSL");
+		addFileType("WMA", FILE_TYPE_WMA, "audio/WMAPRO");
+		addFileType("OGG", FILE_TYPE_OGG, "audio/OGG");
+		addFileType("APE", FILE_TYPE_APE, "audio/APE");
+		addFileType("FLAC", FILE_TYPE_FLAC, "audio/FLAC");
+		addFileType("RM", FILE_TYPE_RM, "audio/COOK");
+        addFileType("RA", FILE_TYPE_RM, "audio/COOK");
+		addFileType("PCM", FILE_TYPE_PCM, "audio/PCM");
+		addFileType("PCM", FILE_TYPE_PCM, "audio/ADPCM");
+        addFileType("AWB", FILE_TYPE_AWB, "audio/AWB");
+#endif
         addFileType("MID", FILE_TYPE_MID, "audio/midi");
         addFileType("MIDI", FILE_TYPE_MID, "audio/midi");
         addFileType("XMF", FILE_TYPE_MID, "audio/midi");
@@ -229,9 +281,37 @@ public class MediaFile {
         addFileType("MPG", FILE_TYPE_MP2TS, "video/mp2ts");
 
         addFileType("AVI", FILE_TYPE_AVI, "video/avi");
+#ifdef ACT_AUDIO
+        addFileType("MOV", FILE_TYPE_M4V, "video/mp4", MtpConstants.FORMAT_MPEG);
+        addFileType("TS", FILE_TYPE_MP2TS, "video/ts");
+        addFileType("M2TS", FILE_TYPE_MP2TS, "video/ts");
+        addFileType("MTS", FILE_TYPE_MP2TS, "video/ts");
+        addFileType("TP", FILE_TYPE_MP2TS, "video/ts");
+        addFileType("F4V", FILE_TYPE_FLV, "video/flv");
+        addFileType("FLV", FILE_TYPE_FLV, "video/flv");
+        addFileType("RMVB", FILE_TYPE_RMVB, "video/rm");
+        addFileType("RM", FILE_TYPE_RMVB, "video/rm");
+        addFileType("DAT", FILE_TYPE_MPG, "video/mpg");
+        addFileType("VOB", FILE_TYPE_MPG, "video/mpg");
+        addFileType("EVO", FILE_TYPE_MPG, "video/mpg");
+        addFileType("MKV", FILE_TYPE_MKV, "video/mkv");
+        addFileType("WEBM", FILE_TYPE_WEBM, "video/mkv");
+        addFileType("WMV", FILE_TYPE_WMV, "video/wmv");
+        addFileType("ASF", FILE_TYPE_ASF, "video/wmv");
+        addFileType("DIVX", FILE_TYPE_DIVX, "video/avi");
+        addFileType("OGG", FILE_TYPE_OGM, "video/ogm");
+        addFileType("OGM", FILE_TYPE_OGM, "video/ogm");
+        addFileType("3GP", FILE_TYPE_3GPP, "video/mp4");
+        addFileType("3GPP", FILE_TYPE_3GPP, "video/mp4");
+        addFileType("3G2", FILE_TYPE_3GPP2, "video/mp4");
+        addFileType("3GPP2", FILE_TYPE_3GPP2, "video/mp4");
+#endif
 
         if (isWMVEnabled()) {
             addFileType("WMV", FILE_TYPE_WMV, "video/x-ms-wmv", MtpConstants.FORMAT_WMV);
+#ifdef ACT_AUDIO
+            addFileType("WMV", FILE_TYPE_WMV, "video/wmv");
+#endif
             addFileType("ASF", FILE_TYPE_ASF, "video/x-ms-asf");
         }
 
@@ -240,6 +320,10 @@ public class MediaFile {
         addFileType("GIF", FILE_TYPE_GIF, "image/gif", MtpConstants.FORMAT_GIF);
         addFileType("PNG", FILE_TYPE_PNG, "image/png", MtpConstants.FORMAT_PNG);
         addFileType("BMP", FILE_TYPE_BMP, "image/x-ms-bmp", MtpConstants.FORMAT_BMP);
+#ifdef ACT_AUDIO
+        addFileType("TIFF", FILE_TYPE_TIFF, "image/tiff");
+        addFileType("TIF", FILE_TYPE_TIFF, "image/tif");
+#endif
         addFileType("WBMP", FILE_TYPE_WBMP, "image/vnd.wap.wbmp");
         addFileType("WEBP", FILE_TYPE_WEBP, "image/webp");
 

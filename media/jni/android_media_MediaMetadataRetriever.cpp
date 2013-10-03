@@ -24,6 +24,9 @@
 #include <core/SkBitmap.h>
 #include <media/mediametadataretriever.h>
 #include <private/media/VideoFrame.h>
+#ifdef ACT_AUDIO
+#include <actal_posix_dev.h>
+#endif
 
 #include "jni.h"
 #include "JNIHelp.h"
@@ -345,7 +348,11 @@ static jobject android_media_MediaMetadataRetriever_extractMetadata(JNIEnv *env,
         return NULL;
     }
     const char* value = retriever->extractMetadata(keyCode);
+#ifdef ACT_AUDIO
+    if (!value || (actal_check_utf8(value, strlen(value)) != 0)) {
+#e;se
     if (!value) {
+#endif
         ALOGV("extractMetadata: Metadata is not found");
         return NULL;
     }
