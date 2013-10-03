@@ -2686,6 +2686,13 @@ public final class Settings {
         public static final String ACTIVE_DISPLAY_ALL_NOTIFICATIONS = "active_display_all_notifications";
 
         /**
+         * Whether to hide low priority notifications like those from google now
+         * @hide
+         */
+        public static final String ACTIVE_DISPLAY_HIDE_LOW_PRIORITY_NOTIFICATIONS =
+                "active_display_hide_low_priority_notifications";
+
+        /**
          * Whether to display AM/PM after time when in 12h format
          * @hide
          */
@@ -4439,6 +4446,13 @@ public final class Settings {
          * @hid
          */
         public static final String QUICK_TOGGLE_VIBRATE = "quick_toggle_vibrate";
+
+        /**
+         * enable and disable launching toggles in a floating window
+         *
+         * @hide
+         */
+        public static final String TOGGLES_FLOATING_WINDOW = "toggles_floating_window";
 
         /**
          * enable and disable fast toggle in settings
