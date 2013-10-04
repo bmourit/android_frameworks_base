@@ -1209,6 +1209,20 @@ public abstract class PackageManager {
     public static final String FEATURE_TELEVISION = "android.hardware.type.television";
 
     /**
+     * Feature for {@link #getSystemAvailableFeatures} and
+     * {@link #hasSystemFeature}:The device supports cvbs pattern of tvout.
+     */
+    @SdkConstant(SdkConstantType.FEATURE)
+    public static final String FEATURE_TVOUT_CVBS = "actions.hardware.cvbs";
+    
+    /**
+     * Feature for {@link #getSystemAvailableFeatures} and
+     * {@link #hasSystemFeature}: The device supports hdmi pattern of tvout.
+     */
+    @SdkConstant(SdkConstantType.FEATURE)
+    public static final String FEATURE_TVOUT_HDMI = "actions.hardware.hdmi";
+    
+    /**
      * Action to external storage service to clean out removed apps.
      * @hide
      */

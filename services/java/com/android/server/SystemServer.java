@@ -79,6 +79,26 @@ import java.io.File;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import android.os.IBinder;
+import java.lang.reflect.Constructor;
+
+/** import com.actions.server.DisplayService; */
+final class ActionServiceManager {
+    private static final String POLICY_IMPL_CLASS_NAME =
+        "com.actions.server.DisplayService";
+    public static IBinder getDisplayManagerService(Context context) {
+        // Pull in the actual implementation of the policy at run-time
+        try {
+            Class policyClass = Class.forName(POLICY_IMPL_CLASS_NAME);
+	    	Constructor cons = policyClass.getDeclaredConstructor(Context.class);
+	   		return (IBinder)cons.newInstance(context);		
+        } catch (Exception ex) {
+            throw new RuntimeException(
+                    POLICY_IMPL_CLASS_NAME + " could not be loaded", ex);
+        } 
+    }
+}
+
 class ServerThread extends Thread {
     private static final String TAG = "SystemServer";
     private static final String ENCRYPTING_STATE = "trigger_restart_min_framework";
@@ -354,9 +374,26 @@ class ServerThread extends Thread {
                        (PackageManager.FEATURE_BLUETOOTH)) {
                 Slog.i(TAG, "No Bluetooth Service (Bluetooth Hardware Not Present)");
             } else {
+            	if (SystemProperties.get("ro.settings.support.bluetooth").equals("true"))
+            	{
                 Slog.i(TAG, "Bluetooth Manager Service");
                 bluetooth = new BluetoothManagerService(context);
                 ServiceManager.addService(BluetoothAdapter.BLUETOOTH_MANAGER_SERVICE, bluetooth);
+            }
+	}
+            // **FIXME** Forced provisioning
+            // normally, provision flag is set by android\packages\apps\Provision
+            // in cases database of setting corrupted, .db file is removed, so we should set  privisoned flag here. 
+            // just for work around.
+            if(!firstBoot){	
+                if(Settings.Secure.getInt(mContentResolver, Settings.Secure.DEVICE_PROVISIONED, 0) == 0){
+                    Settings.Secure.putInt(mContentResolver, Settings.Secure.DEVICE_PROVISIONED, 1);	
+                    Slog.e("System", "Force provisioned");
+                }
+                if(Settings.Secure.getInt(mContentResolver, Settings.Secure.USER_SETUP_COMPLETE, 0) == 0){
+                    Settings.Secure.putInt(mContentResolver, Settings.Secure.USER_SETUP_COMPLETE, 1);	
+                    Slog.e("System", "Force USER_SETUP_COMPLETE to 1");
+                }
             }
 
         } catch (RuntimeException e) {
@@ -749,7 +786,13 @@ class ServerThread extends Thread {
             } catch (Throwable e) {
                 reportWtf("starting SamplingProfiler Service", e);
             }
-
+             try {
+                Slog.i(TAG, "DisplayManager Service");
+                IBinder b=ActionServiceManager.getDisplayManagerService(context);
+		 		ServiceManager.addService("actions.display",b);
+            } catch (Throwable e) {
+                Slog.e(TAG, "Failure starting DisplayManager Service", e);
+            }
             try {
                 Slog.i(TAG, "NetworkTimeUpdateService");
                 networkTimeUpdater = new NetworkTimeUpdateService(context);
