@@ -37,21 +37,13 @@ LOCAL_SHARED_LIBRARIES := \
     libmtp \
     libusbhost \
     libexif \
-    libstagefright_amrnb_common
-
-#ifdef ACT_AUDIO
-LOCAL_SHARED_LIBRARIES += libalc
-#endif
+    libstagefright_amrnb_common \
 
 LOCAL_REQUIRED_MODULES := \
     libexif_jni
 
 LOCAL_STATIC_LIBRARIES := \
     libstagefright_amrnbenc
-
-#ifdef ACT_AUDIO
-LOCAL_C_INCLUDES += $(call include-path-for, alsp)
-#endif
 
 LOCAL_C_INCLUDES += \
     external/jhead \
@@ -67,6 +59,11 @@ LOCAL_C_INCLUDES += \
     $(PV_INCLUDES) \
     $(JNI_H_INCLUDE) \
     $(call include-path-for, corecg graphics)
+
+ifeq ($(TARGET_BOARD_PLATFORM),ATM702X)
+LOCAL_SHARED_LIBRARIES += libalc \
+LOCAL_C_INCLUDES += $(call include-path-for, alsp)
+endif
 
 LOCAL_CFLAGS +=
 
