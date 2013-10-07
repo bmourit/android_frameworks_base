@@ -475,6 +475,9 @@ android_media_MediaPlayer_reset(JNIEnv *env, jobject thiz)
         return;
     }
     process_media_player_call( env, thiz, mp->reset(), NULL, NULL );
+#ifdef ACT_AUDIO
+    usleep(1*1000);
+#endif
 }
 
 static void

@@ -350,7 +350,7 @@ static jobject android_media_MediaMetadataRetriever_extractMetadata(JNIEnv *env,
     const char* value = retriever->extractMetadata(keyCode);
 #ifdef ACT_AUDIO
     if (!value || (actal_check_utf8(value, strlen(value)) != 0)) {
-#e;se
+#else
     if (!value) {
 #endif
         ALOGV("extractMetadata: Metadata is not found");

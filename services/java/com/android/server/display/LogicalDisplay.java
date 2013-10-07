@@ -25,10 +25,8 @@ import java.io.PrintWriter;
 import java.util.List;
 
 import libcore.util.Objects;
-#ifdef ACT_HARDWARE
 import android.util.Slog;
 import android.os.SystemProperties;
-#endif
 
 /**
  * Describes how a logical display is configured.
@@ -63,10 +61,8 @@ final class LogicalDisplay {
     // of its content from appearing.
     private static final int BLANK_LAYER_STACK = -1;
 
-#ifdef ACT_HARDWARE
     private static final int mDefaultRotation = SystemProperties.getInt("ro.sf.default_rotation",0);
     private static final int mHwRotation = SystemProperties.getInt("ro.sf.hwrotation",0)/90;
-#endif
 
     private final int mDisplayId;
     private final int mLayerStack;
@@ -216,7 +212,6 @@ final class LogicalDisplay {
             mBaseDisplayInfo.name = deviceInfo.name;
             mBaseDisplayInfo.appWidth = deviceInfo.width;
             mBaseDisplayInfo.appHeight = deviceInfo.height;
-#ifdef ACT_HARDWARE
             mBaseDisplayInfo.rotation = mDefaultRotation;
             
             if((mHwRotation & 0x01) == 0){
@@ -226,11 +221,7 @@ final class LogicalDisplay {
             	mBaseDisplayInfo.logicalWidth = deviceInfo.height;
             	mBaseDisplayInfo.logicalHeight =  deviceInfo.width; 
             }
-#else
-            mBaseDisplayInfo.logicalWidth = deviceInfo.width;
-            mBaseDisplayInfo.logicalHeight = deviceInfo.height;
-            mBaseDisplayInfo.rotation = Surface.ROTATION_0;
-#endif
+
             mBaseDisplayInfo.refreshRate = deviceInfo.refreshRate;
             mBaseDisplayInfo.logicalDensityDpi = deviceInfo.densityDpi;
             mBaseDisplayInfo.physicalXDpi = deviceInfo.xDpi;
@@ -278,11 +269,8 @@ final class LogicalDisplay {
         // Set the orientation.
         // The orientation specifies how the physical coordinate system of the display
         // is rotated when the contents of the logical display are rendered.
-#ifdef ACT_HARDWARE
         int orientation = Surface.ROTATION_90;
-#else
-        int orientation = Surface.ROTATION_0;
-#endif
+        
         if (device == mPrimaryDisplayDevice
                 && (displayDeviceInfo.flags & DisplayDeviceInfo.FLAG_ROTATES_WITH_CONTENT) != 0) {
             orientation = displayInfo.rotation;

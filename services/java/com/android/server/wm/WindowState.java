@@ -565,11 +565,8 @@ final class WindowState implements WindowManagerPolicy.WindowState {
             mCompatFrame.scale(mInvGlobalScale);
         }
 
-#ifdef ACT_HARDWARE
         if (mIsWallpaper && (fw != frame.width() || fh != frame.height())) {
-#else
-        if (mIsWallpaper) {
-#endif
+
             final int rotation = mService.getRotation();
             mService.updateWallpaperOffsetLocked(this, mPolicy.getWallpaperWidth(rotation),
                     mPolicy.getWallpaperHeight(rotation),

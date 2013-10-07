@@ -285,10 +285,8 @@ public class WindowManagerService extends IWindowManager.Stub
 
     private static final String SYSTEM_SECURE = "ro.secure";
     private static final String SYSTEM_DEBUGGABLE = "ro.debuggable";
-#ifdef ACT_HARDWARE
     private static final String SYSTEM_DEFAULT_ROTATION = "ro.sf.default_rotation";
     private static final String SYSTEM_HW_ROTATION = "ro.sf.hwrotation";
-#endif
 
     private static final int MAX_SCREENSHOT_RETRIES = 3;
 
@@ -467,10 +465,8 @@ public class WindowManagerService extends IWindowManager.Stub
 
     int mRotation = 0;
     int mForcedAppOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
-ifdef ACT_HARDWARE
     int mDefaultRotation = 0;
     int mHwRotation = 0;
-#endif
     boolean mAltOrientation = false;
     ArrayList<IRotationWatcher> mRotationWatchers
             = new ArrayList<IRotationWatcher>();
@@ -785,19 +781,15 @@ ifdef ACT_HARDWARE
         mDisplaySettings = new DisplaySettings(context);
         mDisplaySettings.readSettingsLocked();
 
-#ifdef ACT_HARDWARE
         mDefaultRotation = SystemProperties.getInt(SYSTEM_DEFAULT_ROTATION,0);
         mHwRotation = SystemProperties.getInt(SYSTEM_HW_ROTATION,0) / 90;
-#endif
         mDisplayManager = (DisplayManager)context.getSystemService(Context.DISPLAY_SERVICE);
         mDisplayManager.registerDisplayListener(this, null);
         Display[] displays = mDisplayManager.getDisplays();
         for (Display display : displays) {
             createDisplayContentLocked(display);
         }
-#ifdef ACT_HARDWARE
         mRotation = mDefaultRotation;
-#endif
 
         mKeyguardDisableHandler = new KeyguardDisableHandler(mContext, mPolicy);
 
@@ -5514,12 +5506,10 @@ ifdef ACT_HARDWARE
                 // The screen shot will contain the entire screen.
                 dw = (int)(dw*scale);
                 dh = (int)(dh*scale);
-#ifdef ACT_HARDWARE
             rot = rot - (4 - mHwRotation);
             if(rot < Surface.ROTATION_0){
             	rot = rot + 4;
             }
-#endif
                 if (rot == Surface.ROTATION_90 || rot == Surface.ROTATION_270) {
                     int tmp = dw;
                     dw = dh;
@@ -8958,7 +8948,6 @@ ifdef ACT_HARDWARE
                                 }
                             }
                         }
-#ifdef ACT_HARDWARE
                         /* force to show starting window when rotation */
                         if (atoken != null && w == atoken.startingWindow
                             && w.isOnScreen() && w.isDrawnLw()) {
@@ -8970,7 +8959,6 @@ ifdef ACT_HARDWARE
                                 mH.sendMessageDelayed(mH.obtainMessage(H.WINDOW_FREEZE_TIMEOUT), 100);
                             }
                         }
-#endif
                     }
 
                     if (isDefaultDisplay && someoneLosingFocus && (w == mCurrentFocus)
