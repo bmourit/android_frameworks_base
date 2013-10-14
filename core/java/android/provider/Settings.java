@@ -470,6 +470,19 @@ public final class Settings {
 
     /**
      * @hide
+     * Activity Action: Show the "app ops" details screen.
+     * <p>
+     * Input: The Intent's data URI specifies the application package name
+     * to be shown, with the "package" scheme.  That is "package:com.my.app".
+     * <p>
+     * Output: Nothing.
+     */
+    @SdkConstant(SdkConstantType.ACTIVITY_INTENT_ACTION)
+    public static final String ACTION_APP_OPS_DETAILS_SETTINGS =
+            "android.settings.APP_OPS_DETAILS_SETTINGS";
+
+    /**
+     * @hide
      * Activity Action: Show the "app ops" settings screen.
      * <p>
      * Input: Nothing.
@@ -2355,6 +2368,13 @@ public final class Settings {
         public static final String ACCELEROMETER_ROTATION = "accelerometer_rotation";
 
         /**
+         * Control whether the accelerometer will be used to change lockscreen
+         * orientation.  If 0, it will not be used; if 1, it will be used by default.
+         * @hide
+         */
+        public static final String LOCKSCREEN_ROTATION = "lockscreen_rotation";
+
+        /**
          * Control the type of rotation which can be performed using the accelerometer
          * if ACCELEROMETER_ROTATION is enabled.
          * Value is a bitwise combination of
@@ -2817,47 +2837,102 @@ public final class Settings {
         public static final String POINTER_SPEED = "pointer_speed";
 
         /**
-         * Use the Notification Power Widget? (Who wouldn't!)
+         * Quick Settings Panel Tiles to Use
          *
          * @hide
          */
-        public static final String EXPANDED_VIEW_WIDGET = "expanded_view_widget";
+        public static final String QUICK_SETTINGS_TILES = "quick_settings_tiles";
 
         /**
-         * Whether to hide the notification screen after clicking on a widget
-         * button
+         * Quick Settings Panel Dynamic Tiles
          *
          * @hide
          */
-        public static final String EXPANDED_HIDE_ONCHANGE = "expanded_hide_onchange";
+        public static final String QS_DYNAMIC_ALARM = "qs_dyanmic_alarm";
 
         /**
-         * Hide scroll bar in power widget
+         * Quick Settings Panel Dynamic Tiles
          *
          * @hide
          */
-        public static final String EXPANDED_HIDE_SCROLLBAR = "expanded_hide_scrollbar";
+        public static final String QS_DYNAMIC_BUGREPORT = "qs_dyanmic_bugreport";
 
         /**
-         * Haptic feedback in power widget
+         * Quick Settings Panel Dynamic Tiles
          *
          * @hide
          */
-        public static final String EXPANDED_HAPTIC_FEEDBACK = "expanded_haptic_feedback";
+        public static final String QS_DYNAMIC_IME = "qs_dyanmic_ime";
 
         /**
-         * Widget Buttons to Use
+         * Quick Settings Panel Dynamic Tiles
          *
          * @hide
          */
-        public static final String WIDGET_BUTTONS = "expanded_widget_buttons";
+        public static final String QS_DYNAMIC_USBTETHER = "qs_dyanmic_usbtether";
 
         /**
-         * Widget Buttons to Use - Tablet
+         * Quick Settings Panel Dynamic Tiles
          *
          * @hide
          */
-        public static final String WIDGET_BUTTONS_TABLET = "expanded_widget_buttons_tablet";
+        public static final String QS_DYNAMIC_WIFI = "qs_dyanmic_wifi";
+
+        /**
+         * Quick Settings Quick Pulldown if no notifications are present
+         *
+         * @hide
+         */
+        public static final String QS_NO_NOTIFICATION_PULLDOWN = "qs_no_notification_pulldown";
+
+        /**
+         * Quick Settings Quick Pulldown
+         *
+         * @hide
+         */
+        public static final String QS_QUICK_PULLDOWN = "qs_quick_pulldown";
+
+        /**
+         * Quick Settings Collapse Pane
+         *
+         * @hide
+         */
+        public static final String QS_COLLAPSE_PANEL = "qs_collapse_panel";
+
+        /**
+         * Quick Settings Quick access ribbon
+         *
+         * @hide
+         */
+        public static final String QS_QUICK_ACCESS = "qs_quick_access";
+
+        /**
+         * Quick Settings Quick access ribbon - linked layout
+         *
+         * @hide
+         */
+        public static final String QS_QUICK_ACCESS_LINKED = "qs_quick_access_linked";
+
+        /**
+         * Quick Settings Ribbon Tiles to Use
+         *
+         * @hide
+         */
+        public static final String QUICK_SETTINGS_RIBBON_TILES = "quick_settings__ribbon_tiles";
+
+        /**
+         * enable and disable fast toggle in settings
+         *
+         * @hide
+         */
+        public static final String FAST_TOGGLE = "fast_toggle";
+
+        /**
+         * enable and disable fast toggle in settings
+         *
+         * @hide
+         */
+        public static final String CHOOSE_FASTTOGGLE_SIDE = "choose_fasttoggle_side";
 
         /**
          * Navigation controls to Use
@@ -2873,34 +2948,22 @@ public final class Settings {
         public static final String SHOW_LTE_OR_FOURGEE = "show_lte_or_fourgee";
 
         /**
-        * Notification Power Widget - Custom Brightness Mode
-        * @hide
-        */
-        public static final String EXPANDED_BRIGHTNESS_MODE = "expanded_brightness_mode";
-
-        /**
-        * Notification Power Widget - Custom Network Mode
+        * Quick Settings - Custom Network Mode
         * @hide
         */
         public static final String EXPANDED_NETWORK_MODE = "expanded_network_mode";
 
         /**
-        * Notification Power Widget - Custom Screen Timeout
+        * Quick Settings - Custom Screen Timeout
         * @hide
         */
         public static final String EXPANDED_SCREENTIMEOUT_MODE = "expanded_screentimeout_mode";
 
         /**
-        * Notification Power Widget - Custom Ring Mode
+        * Quick Settings - Custom Ring Mode
         * @hide
         */
         public static final String EXPANDED_RING_MODE = "expanded_ring_mode";
-
-        /**
-        * Notification Power Widget - Custom Torch Mode
-        * @hide
-        */
-        public static final String EXPANDED_FLASH_MODE = "expanded_flash_mode";
 
         /**
          * AutoHide CombinedBar on tablets.
@@ -2943,12 +3006,24 @@ public final class Settings {
          * @hide
          */
         public static final String STATUS_BAR_BATTERY = "status_bar_battery";
-		
+
         /**
          * Network speed indicator
+          * @hide
+          */
+        public static final String STATUS_BAR_TRAFFIC = "status_bar_traffic";
+		
+        /**
+         * Whether to show the network status in the status bar
          * @hide
          */
-        public static final String STATUS_BAR_TRAFFIC = "status_bar_traffic";
+        public static final String STATUS_BAR_NETWORK_STATS = "status_bar_network_stats";
+
+        /**
+         * Frequency at which stats are updated, in milliseconds
+         * @hide
+         */
+        public static final String STATUS_BAR_NETWORK_STATS_UPDATE_INTERVAL = "status_bar_network_stats_update_frequency";
 
 	/**
          * HALO enabled, should default to 0 (HALO is disabled)
@@ -3052,12 +3127,6 @@ public final class Settings {
          * @hide
          */
         public static final String HALO_CIRCLE_COLOR = "halo_circle_color";
-
-	/**
-         * Do you want popups/floating windows?
-         * @hide
-         */
-        public static final String WE_WANT_POPUPS = "we_want_popups";
 
         /**
          * Pie menu, should default to 0 (no, show only when needed)
@@ -3280,12 +3349,18 @@ public final class Settings {
         public static final String STATUSBAR_CLOCK_COLOR = "statusbar_clock_color";
 
         /**
-        * @hide
-        * Shows custom date before clock time
-        * 0 - No Date
-        * 1 - Small Date
-        * 2 - Normal Date
-        */
+         * Setting for network color
+         * @hide
+         */
+        public static final String STATUSBAR_NETWORK_COLOR = "statusbar_network_color";
+
+        /**
+         * @hide
+         * Shows custom date before clock time
+         * 0 - No Date
+         * 1 - Small Date
+         * 2 - Normal Date
+         */
         public static final String STATUSBAR_CLOCK_DATE_DISPLAY = "statusbar_clock_date_display";
 
         /**
@@ -3341,6 +3416,12 @@ public final class Settings {
          * @hide
          */
         public static final String EXPANDED_DESKTOP_MODE = "expanded_desktop_mode";
+
+        /**
+        * Whether fcharge is enabled or not if kernel supports it
+        * @hide
+        */
+        public static final String FCHARGE_ENABLED = "fcharge_enabled";
 
         /**
          * Quick Settings Disable Panel
@@ -4627,25 +4708,60 @@ public final class Settings {
         public static final String QUICK_TOGGLE_VIBRATE = "quick_toggle_vibrate";
 
         /**
-         * enable and disable launching toggles in a floating window
+         * text color on qs tiles
          *
          * @hide
          */
-        public static final String TOGGLES_FLOATING_WINDOW = "toggles_floating_window";
+        public static final String QUICK_TILES_TEXT_COLOR = "quick_tiles_text_color";
 
         /**
-         * enable and disable fast toggle in settings
+         * number of tiles per row in quick settings
          *
          * @hide
          */
-        public static final String FAST_TOGGLE = "fast_toggle";
+        public static final String QUICK_TILES_PER_ROW = "quick_tiles_per_row";
 
         /**
-         * enable and disable fast toggle in settings
+         * number of tiles per row in quick settings
          *
          * @hide
          */
-        public static final String CHOOSE_FASTTOGGLE_SIDE = "choose_fasttoggle_side";
+        public static final String QUICK_TILES_PER_ROW_DUPLICATE_LANDSCAPE = "quick_tiles_per_row_duplicate_landscape";
+
+        /**
+         * Animate-flip Quick Settings Panel Tiles on click
+         *
+         * @hide
+         */
+        public static final String QUICK_SETTINGS_TILES_FLIP = "quick_settings_tiles_flip";
+
+        /**
+         * qs tiles background color
+         *
+         * @hide
+         */
+        public static final String QUICK_TILES_BG_COLOR = "quick_tiles_bg_color";
+
+        /**
+         * qs tiles background color on pressed
+         *
+         * @hide
+         */
+        public static final String QUICK_TILES_BG_PRESSED_COLOR = "quick_tiles_bg_pressed_color";
+
+        /**
+         * qs tiles background color
+         *
+         * @hide
+         */
+        public static final String QUICK_TILES_BG_COLOR_RANDOM = "quick_tiles_bg_color_random";
+
+        /**
+         * Quick Settings Launch in Floating Window
+         *
+         * @hide
+         */
+        public static final String QS_FLOATING_WINDOW = "qs_floating_window";
 
         /**
          * @hide
@@ -4904,6 +5020,7 @@ public final class Settings {
             TIME_12_24,
             DATE_FORMAT,
             ACCELEROMETER_ROTATION,
+            LOCKSCREEN_ROTATION,
             USER_ROTATION,
             DTMF_TONE_WHEN_DIALING,
             DTMF_TONE_TYPE_WHEN_DIALING,
@@ -5222,15 +5339,6 @@ public final class Settings {
         public static final String LOCKSCREEN_ALPHA_CONFIG = "lockscreen_alpha_config";
 
         /**
-         * 0 == QuickSettings Tile
-         * 1 == Toggle Switch (Not implemented Yet)
-         * 2 == Traditional
-         * 3 == Traditional (Scrolling)
-         * @hide
-         */
-        public static final String TOGGLES_STYLE = "toggls_style";
-
-        /**
         * Sets the alpha (transparency) of notifications
         * @hide
         */
@@ -5334,6 +5442,8 @@ public final class Settings {
             MOVED_TO_LOCK_SETTINGS.add(Secure.LOCK_SHOW_ERROR_PATH);
             MOVED_TO_LOCK_SETTINGS.add(Secure.LOCK_DOTS_VISIBLE);
             MOVED_TO_LOCK_SETTINGS.add(Secure.LOCK_PATTERN_TACTILE_FEEDBACK_ENABLED);
+            MOVED_TO_LOCK_SETTINGS.add(Secure.LOCK_GESTURE_ENABLED);
+            MOVED_TO_LOCK_SETTINGS.add(Secure.LOCK_GESTURE_VISIBLE);
 
             MOVED_TO_GLOBAL = new HashSet<String>();
             MOVED_TO_GLOBAL.add(Settings.Global.ADB_ENABLED);
@@ -5983,6 +6093,18 @@ public final class Settings {
         public static final String LOCK_SHOW_ERROR_PATH = "lock_pattern_show_error_path";
 
         /**
+         * Whether autolock is enabled (0 = false, 1 = true)
+         * @hide
+         */
+        public static final String LOCK_GESTURE_ENABLED = "lock_gesture_autolock";
+
+        /**
+         * Whether lock gesture is visible as user enters (0 = false, 1 = true)
+         * @hide
+         */
+        public static final String LOCK_GESTURE_VISIBLE = "lock_gesture_visible_pattern";
+
+        /**
          * This preference allows the device to be locked given time after screen goes off,
          * subject to current DeviceAdmin policy limits.
          * @hide
@@ -6040,6 +6162,13 @@ public final class Settings {
          */
         public static final String LOCKSCREEN_UNSECURE_USED =
             "lockscreen_unsecure_used";
+
+        /**
+         * Determines the width and height of the LockPatternView widget
+         * @hide
+         */
+        public static final String LOCK_PATTERN_SIZE =
+            "lock_pattern_size";
 
         /**
          * The Logging ID (a unique 64-bit value) as a hex string.
@@ -6882,6 +7011,12 @@ public final class Settings {
         public static final String DIALPAD_AUTOCOMPLETE = "dialpad_autocomplete";
 
         /**
+         * Whether privacy guard notification should show.
+         * @hide
+         */
+         public static final String PRIVACY_GUARD_NOTIFICATION = "privacy_guard_notification";
+
+        /**
          * Whether to allow killing of the foreground app by long-pressing the Back button
          * @hide
          */
@@ -6939,7 +7074,8 @@ public final class Settings {
             UI_NIGHT_MODE,
             DIALPAD_AUTOCOMPLETE,
             UI_INVERTED_MODE,
-            PRIVACY_GUARD_DEFAULT
+            PRIVACY_GUARD_DEFAULT,
+            PRIVACY_GUARD_NOTIFICATION
         };
 
         /**

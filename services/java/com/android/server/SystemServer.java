@@ -75,7 +75,10 @@ import com.android.server.wm.WindowManagerService;
 import dalvik.system.VMRuntime;
 import dalvik.system.Zygote;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -183,6 +186,7 @@ class ServerThread extends Thread {
         BluetoothManagerService bluetooth = null;
         DockObserver dock = null;
         RotationSwitchObserver rotateSwitch = null;
+        RegulatoryObserver regulatory = null;
         UsbService usb = null;
         SerialService serial = null;
         TwilightService twilight = null;
@@ -535,6 +539,14 @@ class ServerThread extends Thread {
                 ServiceManager.addService(Context.NETWORK_POLICY_SERVICE, networkPolicy);
             } catch (Throwable e) {
                 reportWtf("starting NetworkPolicy Service", e);
+            }
+
+            try {
+                Slog.i(TAG, "Regulatory Observer");
+                // Listen for country code changes
+                regulatory = new RegulatoryObserver(context);
+            } catch (Throwable e) {
+                reportWtf("starting RegulatoryObserver", e);
             }
 
            try {
@@ -1127,6 +1139,29 @@ class ServerThread extends Thread {
     }
 
     static final void startSystemUi(Context context) {
+
+        // restore fast charge state before starting systemui
+        boolean enabled = Settings.System.getInt(context.getContentResolver(), Settings.System.FCHARGE_ENABLED, 0) == 1;
+            try {
+                    String fchargePath = context.getResources()
+                            .getString(com.android.internal.R.string.config_fastChargePath);
+                    if (!fchargePath.isEmpty()) {
+                        File fastcharge = new File(fchargePath);
+                        if (fastcharge.exists()) {
+                            FileWriter fwriter = new FileWriter(fastcharge);
+                            BufferedWriter bwriter = new BufferedWriter(fwriter);
+                            bwriter.write(enabled ? "1" : "0");
+                            bwriter.close();
+                        } else {
+                            Log.e("FChargeToggle", "No fast charge support");
+                        }
+                    }
+                } catch (IOException e) {
+                    Log.e("FChargeToggle", "Couldn't write fast_charge file");
+                    Settings.System.putInt(context.getContentResolver(),
+                         Settings.System.FCHARGE_ENABLED, 0);
+                }
+
         Intent intent = new Intent();
         intent.setComponent(new ComponentName("com.android.systemui",
                     "com.android.systemui.SystemUIService"));
