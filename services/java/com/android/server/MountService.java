@@ -387,13 +387,13 @@ class MountService extends IMountService.Stub
         @Override
         void handleFinished() {
             int ret = doUnmountVolume(path, true, removeEncryption);
-            if (observer != null) {
-                try {
-                    observer.onShutDownComplete(ret);
-                } catch (RemoteException e) {
-                    Slog.w(TAG, "RemoteException when shutting down");
-                }
-            }
+            //if (observer != null) {
+            //    try {
+            //        observer.onShutDownComplete(ret);
+            //    } catch (RemoteException e) {
+            //        Slog.w(TAG, "RemoteException when shutting down");
+            //    }
+            //}
         }
     }
 
@@ -411,10 +411,13 @@ class MountService extends IMountService.Stub
                 case H_UNMOUNT_PM_UPDATE: {
                     if (DEBUG_UNMOUNT) Slog.i(TAG, "H_UNMOUNT_PM_UPDATE");
                     UnmountCallBack ucb = (UnmountCallBack) msg.obj;
-                    if (!mUpdatingStatus && !isPrimaryStorage(ucb.path)) {
+                    final String path = Environment.getFlashStorageDirectory().getPath();
+                    if (!mUpdatingStatus && !path.equals(ucb.path)) {
                         // If PM isn't already updating, and this isn't an ASEC
                         // mount, then go ahead and do the unmount immediately.
-                        if (DEBUG_UNMOUNT) Slog.i(TAG, " skipping PackageManager for " + ucb.path);
+                        if (DEBUG_UNMOUNT) {
+                            Slog.i(TAG, " skipping PackageManager for " + ucb.path);
+                        }
                         ucb.handleFinished();
                         break;
                     }
@@ -1096,6 +1099,9 @@ class MountService extends IMountService.Stub
     }
 
     private void notifyShareAvailabilityChange(final boolean avail) {
+        if (mUmsAvailable == avail) {
+            return;
+        }
         synchronized (mListeners) {
             mUmsAvailable = avail;
             for (int i = mListeners.size() -1; i >= 0; i--) {
@@ -1117,13 +1123,10 @@ class MountService extends IMountService.Stub
             mSendUmsConnectedOnBoot = avail;
         }
 
-        final ArrayList<String> volumes = getShareableVolumes();
-        boolean mediaShared = false;
-        for (String path : volumes) {
-            if (getVolumeState(path).equals(Environment.MEDIA_SHARED))
-                mediaShared = true;
-        }
-        if (avail == false && mediaShared) {
+        final String path = Environment.getFlashStorageDirectory().getPath();
+        final String pathtf = Environment.getTfcardStorageDirectory().getPath();
+        if ((!avail) && (getVolumeState(path).equals(Environment.MEDIA_SHARED)
+                || getVolumeState(pathtf).equals(Environment.MEDIA_SHARED))) {
             /*
              * USB mass storage disconnected while enabled
              */
@@ -1133,14 +1136,22 @@ class MountService extends IMountService.Stub
                     try {
                         int rc;
                         Slog.w(TAG, "Disabling UMS after cable disconnect");
-                        for (String path : volumes) {
-                            if (getVolumeState(path).equals(Environment.MEDIA_SHARED)) {
-                                doShareUnshareVolume(path, "ums", false);
-                                if ((rc = doMountVolume(path)) != StorageResultCode.OperationSucceeded) {
-                                    Slog.e(TAG, String.format(
-                                            "Failed to remount {%s} on UMS enabled-disconnect (%d)",
-                                                    path, rc));
-                                }
+                        doShareUnshareVolume(path, "ums", false);
+                        if (getVolumeState(pathtf).equals(Environment.MEDIA_SHARED)) {
+                            doShareUnshareVolume(pathtf, "ums", false);
+                        }
+                        if ((rc = doMountVolume(path)) != StorageResultCode.OperationSucceeded) {
+                            Slog.e(TAG, String.format(
+                                    "Failed to remount {%s} on UMS enabled-disconnect (%d)",
+                                            path, rc));
+                        }
+                        if (!getVolumeState(pathtf).equals(Environment.MEDIA_BAD_REMOVAL)
+                                && !getVolumeState(pathtf).equals(Environment.MEDIA_REMOVED)) {
+                            rc = doMountVolume(pathtf);
+                            if (rc != StorageResultCode.OperationSucceeded) {
+                                Slog.e(TAG, String.format(
+                                        "Failed to remount {%s} on UMS enabled-disconnect (%d)",
+                                        pathtf, rc));
                             }
                         }
                     } catch (Exception ex) {
@@ -1178,6 +1189,9 @@ class MountService extends IMountService.Stub
         mVolumes.clear();
         mVolumeStates.clear();
 
+        String usbFunctions = SystemProperties.get("persist.sys.usb.config", "adb");
+        boolean hasMassStorage = usbFunctions.contains("mass_storage");
+        
         Resources resources = mContext.getResources();
 
         int id = com.android.internal.R.xml.storage_list;
@@ -1210,7 +1224,7 @@ class MountService extends IMountService.Stub
                             com.android.internal.R.styleable.Storage_emulated, false);
                     int mtpReserve = a.getInt(
                             com.android.internal.R.styleable.Storage_mtpReserve, 0);
-                    boolean allowMassStorage = a.getBoolean(
+                    boolean allowMassStorage = hasMassStorage && a.getBoolean(
                             com.android.internal.R.styleable.Storage_allowMassStorage, false);
                     // resource parser does not support longs, so XML value is in megabytes
                     long maxFileSize = a.getInt(
@@ -1270,7 +1284,9 @@ class MountService extends IMountService.Stub
      */
     private void createEmulatedVolumeForUserLocked(UserHandle user) {
         if (mEmulatedTemplate == null) {
-            throw new IllegalStateException("Missing emulated volume multi-user template");
+            //throw new IllegalStateException("Missing emulated volume multi-user template");
+            Slog.w(TAG, "Missing emulated volume multi-user template");
+            return;
         }
 
         final UserEnvironment userEnv = new UserEnvironment(user.getIdentifier());
@@ -1447,18 +1463,39 @@ class MountService extends IMountService.Stub
                     // Post a unmount message.
                     ShutdownCallBack ucb = new ShutdownCallBack(path, observer);
                     mHandler.sendMessage(mHandler.obtainMessage(H_UNMOUNT_PM_UPDATE, ucb));
-                } else if (observer != null) {
-                    /*
-                     * Observer is waiting for onShutDownComplete when we are done.
-                     * Since nothing will be done send notification directly so shutdown
-                     * sequence can continue.
-                     */
-                    try {
-                        observer.onShutDownComplete(StorageResultCode.OperationSucceeded);
-                    } catch (RemoteException e) {
-                        Slog.w(TAG, "RemoteException when shutting down");
+                }
+            }
+        }
+        while (true) {
+            int i = 0;
+            int sleepTime = 1000;
+            synchronized (mVolumeStates) {
+                for (String path : mVolumeStates.keySet()) {
+                    String state = mVolumeStates.get(path);
+                    if (state.equals(Environment.MEDIA_MOUNTED)) {
+                        i++;
                     }
                 }
+                if (i == 0) {
+                    if (observer != null) {
+                        /*
+                         * Observer is waiting for onShutDownComplete when we are done.
+                         * Since nothing will be done send notification directly so shutdown
+                         * sequence can continue.
+                         */
+                        try {
+                            observer.onShutDownComplete(StorageResultCode.OperationSucceeded);
+                        } catch (RemoteException e) {
+                            Slog.w(TAG, "RemoteException when shutting down");
+                        }
+                    }
+                    break;
+                }
+            }
+            try {
+                Thread.sleep(sleepTime);
+            } catch (InterruptedException iex) {
+                Slog.e(TAG, "Interrupted while waiting ", iex);
             }
         }
     }
@@ -1522,12 +1559,21 @@ class MountService extends IMountService.Stub
         for (String path : getShareableVolumes()) {
             /*
              * If the volume is mounted and we're enabling then unmount it
-             */
-            String vs = getVolumeState(path);
-            String method = "ums";
-            if (enable && vs.equals(Environment.MEDIA_MOUNTED)) {
-                // Override for isUsbMassStorageEnabled()
-                setUmsEnabling(enable);
+             */        String path = Environment.getFlashStorageDirectory().getPath();
+        String vs = getVolumeState(path);
+        String path_tf = Environment.getTfcardStorageDirectory().getPath();
+        String vs_tf = getVolumeState(path_tf);
+        String method = "ums";
+        if (enable) {
+            // Override for isUsbMassStorageEnabled()
+            setUmsEnabling(enable);
+            UmsEnableCallBack umscb;
+            umscb = new UmsEnableCallBack(path, method, true);
+            mHandler.sendMessage(mHandler.obtainMessage(H_UNMOUNT_PM_UPDATE, umscb));
+            if (vs_tf.equals(Environment.MEDIA_MOUNTED)) {
+                umscb = new UmsEnableCallBack(path_tf, method, true);
+                mHandler.sendMessage(mHandler.obtainMessage(H_UNMOUNT_PM_UPDATE, umscb));
+            }
                 UmsEnableCallBack umscb = new UmsEnableCallBack(path, method, true);
                 mHandler.sendMessage(mHandler.obtainMessage(H_UNMOUNT_PM_UPDATE, umscb));
                 // Clear override
@@ -1535,17 +1581,27 @@ class MountService extends IMountService.Stub
             }
             /*
              * If we disabled UMS then mount the volume
-             */
-            if (!enable) {
-                doShareUnshareVolume(path, method, enable);
-                if (doMountVolume(path) != StorageResultCode.OperationSucceeded) {
-                    Slog.e(TAG, "Failed to remount " + path +
-                            " after disabling share method " + method);
-                    /*
-                     * Even though the mount failed, the unshare didn't so don't indicate an error.
-                     * The mountVolume() call will have set the storage state and sent the necessary
-                     * broadcasts.
-                     */
+         */
+        if (!enable) {
+            doShareUnshareVolume(path, method, enable);
+            if (vs_tf.equals(Environment.MEDIA_SHARED)) {
+                doShareUnshareVolume(path_tf, method, enable);
+            }
+            if (doMountVolume(path) != StorageResultCode.OperationSucceeded) {
+                Slog.e(TAG, "Failed to remount " + path +
+                        " after disabling share method " + method);
+                /*
+                 * Even though the mount failed, the unshare didn't so don't indicate an error.
+                 * The mountVolume() call will have set the storage state and sent the necessary
+                 * broadcasts.
+                 */
+            }
+            if (!vs_tf.equals(Environment.MEDIA_BAD_REMOVAL)
+                    && !vs_tf.equals(Environment.MEDIA_REMOVED)) {
+                if (doMountVolume(path_tf) != StorageResultCode.OperationSucceeded) {
+                    Slog.e(TAG, "Failed to remount " + path_tf 
+                            + " after disabling share method " + method);
+                    }
                 }
             }
         }

@@ -260,6 +260,15 @@ public class Environment {
 
     private static final File DOWNLOAD_CACHE_DIRECTORY = getDirectory("DOWNLOAD_CACHE", "/cache");
 
+    private static final File FLASH_STORAGE_DIRECTORY
+        = getDirectory("FLASH_STORAGE", "/mnt/sdcard0");
+
+    private static final File TFCARD_STORAGE_DIRECTORY
+        = getDirectory("TFCARD_STORAGE", "/mnt/sdcard1");
+
+    private static final File UHOST_STORAGE_DIRECTORY
+        = getDirectory("UHOST_STORAGE", "/mnt/usbdisk0");
+
     /**
      * Gets the Android data directory.
      */
@@ -321,6 +330,20 @@ public class Environment {
     public static File getExternalStorageDirectory() {
         throwIfUserRequired();
         return sCurrentUser.getExternalStorageDirectory();
+    }
+
+    /** {@hide} */ // needed for USB_Modeswitch device function with no MTD support
+		   // and secure storage path doesn't allow this.
+    public static File getFlashStorageDirectory() {
+        return FLASH_STORAGE_DIRECTORY;
+    }
+    /** {@hide} */
+    public static File getTfcardStorageDirectory() {
+        return TFCARD_STORAGE_DIRECTORY;
+    }
+    /** {@hide} */
+    public static File getUhostStorageDirectory() {
+        return UHOST_STORAGE_DIRECTORY;
     }
 
     /** {@hide} */
@@ -598,6 +621,39 @@ public class Environment {
             return mountService.getVolumeState(primary.getPath());
         } catch (RemoteException rex) {
             Log.w(TAG, "Failed to read external storage state; assuming REMOVED: " + rex);
+            return Environment.MEDIA_REMOVED;
+        }
+    }
+
+    /** {@hide} */
+        public static String getFlashStorageState() {
+        try {
+            IMountService mountService = IMountService.Stub.asInterface(ServiceManager
+                    .getService("mount"));
+            return mountService.getVolumeState(getFlashStorageDirectory().toString());
+        } catch (Exception rex) {
+            return Environment.MEDIA_REMOVED;
+        }
+    }
+
+    /** {@hide} */
+        public static String getTfcardStorageState() {
+        try {
+            IMountService mountService = IMountService.Stub.asInterface(ServiceManager
+                    .getService("mount"));
+            return mountService.getVolumeState(getTfcardStorageDirectory().toString());
+        } catch (Exception rex) {
+            return Environment.MEDIA_REMOVED;
+        }
+    }
+
+    /** {@hide} */
+        public static String getUhostStorageState() {
+        try {
+            IMountService mountService = IMountService.Stub.asInterface(ServiceManager
+                    .getService("mount"));
+            return mountService.getVolumeState(getUhostStorageDirectory().toString());
+        } catch (Exception rex) {
             return Environment.MEDIA_REMOVED;
         }
     }

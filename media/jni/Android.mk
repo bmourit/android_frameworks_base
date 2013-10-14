@@ -18,7 +18,7 @@ LOCAL_SRC_FILES:= \
     android_media_Utils.cpp \
     android_mtp_MtpDatabase.cpp \
     android_mtp_MtpDevice.cpp \
-    android_mtp_MtpServer.cpp \
+    android_mtp_MtpServer.cpp
 
 LOCAL_SHARED_LIBRARIES := \
     libandroid_runtime \
@@ -38,6 +38,7 @@ LOCAL_SHARED_LIBRARIES := \
     libusbhost \
     libexif \
     libstagefright_amrnb_common \
+    libalc
 
 LOCAL_REQUIRED_MODULES := \
     libexif_jni
@@ -61,11 +62,8 @@ LOCAL_C_INCLUDES += \
     $(call include-path-for, corecg graphics)
 
 ifeq ($(TARGET_BOARD_PLATFORM),ATM702X)
-LOCAL_SHARED_LIBRARIES += libalc \
 LOCAL_C_INCLUDES += $(call include-path-for, alsp)
 endif
-
-LOCAL_CFLAGS +=
 
 LOCAL_LDLIBS := -lpthread
 
