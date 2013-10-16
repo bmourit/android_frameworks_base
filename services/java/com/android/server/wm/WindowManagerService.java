@@ -5479,7 +5479,6 @@ public class WindowManagerService extends IWindowManager.Stub
 
                 // The screenshot API does not apply the current screen rotation.
                 rot = getDefaultDisplayContentLocked().getDisplay().getRotation();
-
                 int fw = frame.width();
                 int fh = frame.height();
 

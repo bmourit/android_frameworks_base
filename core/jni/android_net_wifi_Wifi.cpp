@@ -220,7 +220,7 @@ static JNINativeMethod gWifiMethods[] = {
             (void*) android_net_wifi_doIntCommand },
     { "doStringCommand", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
             (void*) android_net_wifi_doStringCommand },
-//    { "setMode", "(I)Z", (void*) android_net_wifi_setMode},
+    //{ "setMode", "(I)Z", (void*) android_net_wifi_setMode},
 };
 
 int register_android_net_wifi_WifiManager(JNIEnv* env)
