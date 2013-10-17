@@ -332,16 +332,28 @@ public class Environment {
         return sCurrentUser.getExternalStorageDirectory();
     }
 
-    /** {@hide} */ // needed for USB_Modeswitch device function with no MTD support
-		   // and secure storage path doesn't allow this.
+    /**
+    @hide
+     * needed for USB_Modeswitch device function with no MTD support
+     * and secure storage path doesn't allow this.
+     * @return Returns the Flash directory
+     */
     public static File getFlashStorageDirectory() {
         return FLASH_STORAGE_DIRECTORY;
     }
-    /** {@hide} */
+
+    /**
+    @hide
+     * @return Returns the Tf card directory
+     */
     public static File getTfcardStorageDirectory() {
         return TFCARD_STORAGE_DIRECTORY;
     }
-    /** {@hide} */
+
+    /**
+    @hide
+     * @return Returns the Uhost directory
+     */
     public static File getUhostStorageDirectory() {
         return UHOST_STORAGE_DIRECTORY;
     }
@@ -625,7 +637,10 @@ public class Environment {
         }
     }
 
-    /** {@hide} */
+    /**
+        @hide
+        @return Returns the Flash State
+    */
         public static String getFlashStorageState() {
         try {
             IMountService mountService = IMountService.Stub.asInterface(ServiceManager
@@ -636,7 +651,10 @@ public class Environment {
         }
     }
 
-    /** {@hide} */
+    /**
+        @hide
+        @return Returns the Tf card State
+    */
         public static String getTfcardStorageState() {
         try {
             IMountService mountService = IMountService.Stub.asInterface(ServiceManager
@@ -647,7 +665,10 @@ public class Environment {
         }
     }
 
-    /** {@hide} */
+    /**
+        @hide
+        @return Returns the Uhost State
+    */
         public static String getUhostStorageState() {
         try {
             IMountService mountService = IMountService.Stub.asInterface(ServiceManager

@@ -160,8 +160,8 @@ LOCAL_SRC_FILES += \
 	core/java/android/service/wallpaper/IWallpaperConnection.aidl \
 	core/java/android/service/wallpaper/IWallpaperEngine.aidl \
 	core/java/android/service/wallpaper/IWallpaperService.aidl \
-	core/java/android/view/accessibility/IAccessibilityInteractionConnection.aidl\
-	core/java/android/view/accessibility/IAccessibilityInteractionConnectionCallback.aidl\
+	core/java/android/view/accessibility/IAccessibilityInteractionConnection.aidl \
+	core/java/android/view/accessibility/IAccessibilityInteractionConnectionCallback.aidl \
 	core/java/android/view/accessibility/IAccessibilityManager.aidl \
 	core/java/android/view/accessibility/IAccessibilityManagerClient.aidl \
 	core/java/android/view/IApplicationToken.aidl \
@@ -243,7 +243,6 @@ LOCAL_SRC_FILES += \
 	wifi/java/android/net/wifi/IWifiManager.aidl \
 	wifi/java/android/net/wifi/p2p/IWifiP2pManager.aidl
 #
-
 
 # FRAMEWORKS_BASE_JAVA_SRC_DIRS comes from build/core/pathmap.mk
 LOCAL_AIDL_INCLUDES += $(FRAMEWORKS_BASE_JAVA_SRC_DIRS)
