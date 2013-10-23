@@ -1855,6 +1855,13 @@ public final class Settings {
          */
         public static final String SCREEN_OFF_TIMEOUT = "screen_off_timeout";
 
+	/**
+	 * If 0, original coordinate.
+         * If 1, special coordinate for some sensor game.
+         * The accelerometer coordinate mode.
+         */
+        public static final String    ACCELEROMETER_COORDINATE_MODE = "accelerometer_coordinate_mode";
+        
         /**
          * The screen backlight brightness between 0 and 255.
          */

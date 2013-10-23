@@ -44,6 +44,7 @@ public class SyncStatusInfo implements Parcelable {
     public boolean initialize;
     public ArrayList<Long> periodicSyncTimes;
 
+    private final Object mPeriodicSyncTimesLock = new Object();
     private static final String TAG = "Sync";
 
     public SyncStatusInfo(int authorityId) {
@@ -81,13 +82,15 @@ public class SyncStatusInfo implements Parcelable {
         parcel.writeLong(initialFailureTime);
         parcel.writeInt(pending ? 1 : 0);
         parcel.writeInt(initialize ? 1 : 0);
-        if (periodicSyncTimes != null) {
-            parcel.writeInt(periodicSyncTimes.size());
-            for (long periodicSyncTime : periodicSyncTimes) {
-                parcel.writeLong(periodicSyncTime);
+        synchronized (mPeriodicSyncTimesLock) {
+            if (periodicSyncTimes != null) {
+                parcel.writeInt(periodicSyncTimes.size());
+                for (long periodicSyncTime : periodicSyncTimes) {
+                    parcel.writeLong(periodicSyncTime);
+                }
+            } else {
+                parcel.writeInt(-1);
             }
-        } else {
-            parcel.writeInt(-1);
         }
     }
 
@@ -111,24 +114,28 @@ public class SyncStatusInfo implements Parcelable {
         initialFailureTime = parcel.readLong();
         pending = parcel.readInt() != 0;
         initialize = parcel.readInt() != 0;
-        if (version == 1) {
-            periodicSyncTimes = null;
-        } else {
-            int N = parcel.readInt();
-            if (N < 0) {
+        synchronized (mPeriodicSyncTimesLock) {
+            if (version == 1) {
                 periodicSyncTimes = null;
             } else {
-                periodicSyncTimes = new ArrayList<Long>();
-                for (int i=0; i<N; i++) {
-                    periodicSyncTimes.add(parcel.readLong());
+                int N = parcel.readInt();
+                if (N < 0) {
+                    periodicSyncTimes = null;
+                } else {
+                    periodicSyncTimes = new ArrayList<Long>();
+                    for (int i=0; i<N; i++) {
+                        periodicSyncTimes.add(parcel.readLong());
+                    }
                 }
             }
         }
     }
 
     public void setPeriodicSyncTime(int index, long when) {
-        ensurePeriodicSyncTimeSize(index);
-        periodicSyncTimes.set(index, when);
+        synchronized (mPeriodicSyncTimesLock) {
+            ensurePeriodicSyncTimeSize(index);
+            periodicSyncTimes.set(index, when);
+        }
     }
 
     private void ensurePeriodicSyncTimeSize(int index) {
@@ -145,15 +152,19 @@ public class SyncStatusInfo implements Parcelable {
     }
 
     public long getPeriodicSyncTime(int index) {
-        if (periodicSyncTimes == null || periodicSyncTimes.size() < (index + 1)) {
-            return 0;
+        synchronized (mPeriodicSyncTimesLock) {
+            if (periodicSyncTimes == null || periodicSyncTimes.size() < (index + 1)) {
+                return 0;
+            }
+            return periodicSyncTimes.get(index);
         }
-        return periodicSyncTimes.get(index);
     }
 
     public void removePeriodicSyncTime(int index) {
-        ensurePeriodicSyncTimeSize(index);
-        periodicSyncTimes.remove(index);
+        synchronized (mPeriodicSyncTimesLock) {
+            ensurePeriodicSyncTimeSize(index);
+            periodicSyncTimes.remove(index);
+        }
     }
 
     public static final Creator<SyncStatusInfo> CREATOR = new Creator<SyncStatusInfo>() {

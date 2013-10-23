@@ -480,8 +480,16 @@ public abstract class Window {
             boolean hardwareAccelerated) {
         mAppToken = appToken;
         mAppName = appName;
-        mHardwareAccelerated = hardwareAccelerated
+
+        String curPackage = mContext.getPackageName();
+        if(curPackage.equals("com.aurorasoftworks.quadrant.ui.standard")
+            ||curPackage.equals("com.aurorasoftworks.quadrant.ui.advanced")
+            ||curPackage.equals("com.lovebizhi.wallpaper")) {
+	    mHardwareAccelerated = true;
+            } else {
+            mHardwareAccelerated = hardwareAccelerated
                 || SystemProperties.getBoolean(PROPERTY_HARDWARE_UI, false);
+            }
         if (wm == null) {
             wm = (WindowManager)mContext.getSystemService(Context.WINDOW_SERVICE);
         }

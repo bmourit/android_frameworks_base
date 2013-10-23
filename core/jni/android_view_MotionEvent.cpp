@@ -554,6 +554,13 @@ static jint android_view_MotionEvent_nativeGetPointerId(JNIEnv* env, jclass claz
         jint nativePtr, jint pointerIndex) {
     MotionEvent* event = reinterpret_cast<MotionEvent*>(nativePtr);
     size_t pointerCount = event->getPointerCount();
+
+    // avoid array out of range
+    if (pointerIndex >= pointerCount) {        
+        ALOGE("Error pointerIndex! count=%d, index=%d", pointerCount, pointerIndex);
+        pointerIndex = 0;
+    }
+    
     if (!validatePointerIndex(env, pointerIndex, pointerCount)) {
         return -1;
     }
@@ -564,6 +571,13 @@ static jint android_view_MotionEvent_nativeGetToolType(JNIEnv* env, jclass clazz
         jint nativePtr, jint pointerIndex) {
     MotionEvent* event = reinterpret_cast<MotionEvent*>(nativePtr);
     size_t pointerCount = event->getPointerCount();
+    
+    // avoid array out of range
+    if (pointerIndex >= pointerCount) {        
+        ALOGE("Error pointerIndex! count=%d, index=%d", pointerCount, pointerIndex);
+        pointerIndex = 0;
+    }
+    
     if (!validatePointerIndex(env, pointerIndex, pointerCount)) {
         return -1;
     }
@@ -600,6 +614,13 @@ static jfloat android_view_MotionEvent_nativeGetRawAxisValue(JNIEnv* env, jclass
         jint nativePtr, jint axis, jint pointerIndex, jint historyPos) {
     MotionEvent* event = reinterpret_cast<MotionEvent*>(nativePtr);
     size_t pointerCount = event->getPointerCount();
+    
+    // avoid array out of range
+    if (pointerIndex >= pointerCount) {        
+        ALOGE("Error pointerIndex! count=%d, index=%d", pointerCount, pointerIndex);
+        pointerIndex = 0;
+    }
+    
     if (!validatePointerIndex(env, pointerIndex, pointerCount)) {
         return 0;
     }
@@ -619,6 +640,13 @@ static jfloat android_view_MotionEvent_nativeGetAxisValue(JNIEnv* env, jclass cl
         jint nativePtr, jint axis, jint pointerIndex, jint historyPos) {
     MotionEvent* event = reinterpret_cast<MotionEvent*>(nativePtr);
     size_t pointerCount = event->getPointerCount();
+    
+    // avoid array out of range
+    if (pointerIndex >= pointerCount) {        
+        ALOGE("Error pointerIndex! count=%d, index=%d", pointerCount, pointerIndex);
+        pointerIndex = 0;
+    }
+    
     if (!validatePointerIndex(env, pointerIndex, pointerCount)) {
         return 0;
     }
@@ -638,6 +666,13 @@ static void android_view_MotionEvent_nativeGetPointerCoords(JNIEnv* env, jclass 
         jint nativePtr, jint pointerIndex, jint historyPos, jobject outPointerCoordsObj) {
     MotionEvent* event = reinterpret_cast<MotionEvent*>(nativePtr);
     size_t pointerCount = event->getPointerCount();
+    
+    // avoid array out of range
+    if (pointerIndex >= pointerCount) {        
+        ALOGE("Error pointerIndex! count=%d, index=%d", pointerCount, pointerIndex);
+        pointerIndex = 0;
+    }
+    
     if (!validatePointerIndex(env, pointerIndex, pointerCount)
             || !validatePointerCoords(env, outPointerCoordsObj)) {
         return;
@@ -661,6 +696,13 @@ static void android_view_MotionEvent_nativeGetPointerProperties(JNIEnv* env, jcl
         jint nativePtr, jint pointerIndex, jobject outPointerPropertiesObj) {
     MotionEvent* event = reinterpret_cast<MotionEvent*>(nativePtr);
     size_t pointerCount = event->getPointerCount();
+    
+    // avoid array out of range
+    if (pointerIndex >= pointerCount) {        
+        ALOGE("Error pointerIndex! count=%d, index=%d", pointerCount, pointerIndex);
+        pointerIndex = 0;
+    }
+    
     if (!validatePointerIndex(env, pointerIndex, pointerCount)
             || !validatePointerProperties(env, outPointerPropertiesObj)) {
         return;

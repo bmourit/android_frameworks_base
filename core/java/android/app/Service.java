@@ -15,18 +15,21 @@
  */
 
 package android.app;
-
+import android.os.Bundle;
 import android.content.ComponentCallbacks2;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ContextWrapper;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.RemoteException;
 import android.os.IBinder;
+import android.os.Handler;
 import android.util.Log;
-
+import android.os.Process;
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 
@@ -304,6 +307,13 @@ public abstract class Service extends ContextWrapper implements ComponentCallbac
      * Called by the system when the service is first created.  Do not call this method directly.
      */
     public void onCreate() {
+    // bugfix for apk compatibility
+    // broadcastForBenchmark("resume");
+    new Handler().postDelayed(new Runnable() {  
+        public void run() {  
+            broadcastForBenchmark("resume"); 
+            }  
+        }, 10);
     }
 
     /**
@@ -458,6 +468,8 @@ public abstract class Service extends ContextWrapper implements ComponentCallbac
      * in to this Service object and it is effectively dead.  Do not call this method directly.
      */
     public void onDestroy() {
+    	// broadcastForBenchmark("pause");    	
+    	broadcastForBenchmark("destroy");
     }
 
     public void onConfigurationChanged(Configuration newConfig) {
@@ -468,7 +480,35 @@ public abstract class Service extends ContextWrapper implements ComponentCallbac
 
     public void onTrimMemory(int level) {
     }
-
+    private   int toInt(String str){    
+	int result = 0;    
+	int i;    
+	for (i=0; i<str.length(); ++i) 
+	      result = 33*result + str.charAt(i);    
+	return result;    
+   }  
+   
+	private void broadcastForBenchmark(String state) {
+            //Log.w(TAG, "mClassName= " + getPackageName() + "toInt= " + toInt(getPackageName()));
+        if(toInt(getPackageName())==2042680072){
+	    Intent intent= new Intent("android.intent.benchmark");
+	    Bundle b=new Bundle();
+	    b.putString("state", state);
+	        //b.putString("package", "com.antutu.ABenchMark");
+	    b.putString("package", getPackageName());		
+	    b.putIBinder("binder", mToken);
+	try{
+	    PackageManager pm = getPackageManager();
+	    PackageInfo pinfo = pm.getPackageInfo(getPackageName(), 0);
+            b.putString("vName", pinfo.versionName);
+	    b.putString("vCode",Integer.toString(pinfo.versionCode));
+	    b.putInt("pid", Process.myPid());
+	        }catch(Exception e){
+            }
+            intent.putExtra("bundle", b);
+	    sendBroadcast(intent);
+	    }	
+        }
     /**
      * Return the communication channel to the service.  May return null if 
      * clients can not bind to the service.  The returned

@@ -238,8 +238,7 @@ static jobject Bitmap_creator(JNIEnv* env, jobject, jintArray jColors,
     }
 
     if (jColors != NULL) {
-        GraphicsJNI::SetPixels(env, jColors, offset, stride,
-                               0, 0, width, height, bitmap);
+        GraphicsJNI::SetPixels(env, jColors, offset, stride, 0, 0, width, height, bitmap);
     }
 
     return GraphicsJNI::createBitmap(env, new SkBitmap(bitmap), buff, isMutable, NULL, NULL);

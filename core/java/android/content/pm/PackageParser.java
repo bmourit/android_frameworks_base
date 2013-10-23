@@ -63,6 +63,9 @@ import com.android.internal.util.XmlUtils;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+
 /**
  * Package archive parsing
  *
@@ -220,7 +223,9 @@ public class PackageParser {
     private ParseComponentArgs mParseActivityAliasArgs;
     private ParseComponentArgs mParseServiceArgs;
     private ParseComponentArgs mParseProviderArgs;
-    
+
+    private static List<String> mBuiltinPkgs;
+
     /** If set to true, we will only allow package files that exactly match
      *  the DTD.  Otherwise, we try to get as much from the package as we
      *  can without failing.  This should normally be set to false, to
@@ -231,6 +236,9 @@ public class PackageParser {
 
     public PackageParser(String archiveSourcePath) {
         mArchiveSourcePath = archiveSourcePath;
+        if (mBuiltinPkgs == null) {
+            mBuiltinPkgs = getBuiltinPkg("/system/etc/builtinapk");
+        }
     }
 
     public void setSeparateProcesses(String[] procs) {
@@ -953,6 +961,37 @@ public class PackageParser {
         return new Signature(sig);
     }
 
+    public List<String> getBuiltinPkg (String file)
+    {  
+        Log.v(TAG, "BuiltinPkg file :" + file);
+        String pkgName = null;
+        BufferedReader reader = null;
+        ArrayList<String> bpList = new ArrayList();
+        
+        try {
+            File confFile = new File(file);
+            reader = new BufferedReader(new FileReader(file));            
+            while ((pkgName = reader.readLine()) != null) {
+                Log.v(TAG,"Built-in pkgName:"+pkgName);
+                bpList.add(pkgName);
+            }
+            reader.close();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        
+        return bpList;
+    }
+
     private Package parsePackage(
         Resources res, XmlResourceParser parser, int flags, String[] outError)
         throws XmlPullParserException, IOException {
@@ -985,6 +1024,18 @@ public class PackageParser {
                 com.android.internal.R.styleable.AndroidManifest);
         pkg.mVersionCode = sa.getInteger(
                 com.android.internal.R.styleable.AndroidManifest_versionCode, 0);
+
+        if (mBuiltinPkgs != null) {
+            for (int i = 0; i < mBuiltinPkgs.size(); i++) {
+                if (pkgName.equals(mBuiltinPkgs.get(i))) {
+                    Log.d(TAG,"mBuiltinPkgs["+i+"]:"+mBuiltinPkgs.get(i)
+                        +" origin versionCode:"+pkg.mVersionCode);
+                    pkg.mVersionCode=10000;
+                    break;
+                }
+            }
+        }
+        
         pkg.mVersionName = sa.getNonConfigurationString(
                 com.android.internal.R.styleable.AndroidManifest_versionName, 0);
         if (pkg.mVersionName != null) {

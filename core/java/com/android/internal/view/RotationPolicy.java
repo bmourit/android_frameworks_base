@@ -29,12 +29,15 @@ import android.util.Log;
 import android.view.IWindowManager;
 import android.view.Surface;
 import android.view.WindowManagerGlobal;
+import android.os.SystemProperties;
 
 /**
  * Provides helper functions for configuring the display rotation policy.
  */
 public final class RotationPolicy {
     private static final String TAG = "RotationPolicy";
+
+    static final int mDefaultRotation = SystemProperties.getInt("ro.sf.default_rotation", 0);
 
     private RotationPolicy() {
     }
@@ -115,7 +118,11 @@ public final class RotationPolicy {
                 try {
                     IWindowManager wm = WindowManagerGlobal.getWindowManagerService();
                     if (enabled) {
-                        wm.freezeRotation(Surface.ROTATION_0);
+                        if(mDefaultRotation == 1){
+                            wm.freezeRotation(Surface.ROTATION_90);
+                        }else{
+                            wm.freezeRotation(Surface.ROTATION_0);
+                        } 						
                     } else {
                         wm.thawRotation();
                     }

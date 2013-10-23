@@ -179,13 +179,12 @@ abstract class DisplayDevice {
      * physical and logical rects based on the display's current projection.
      */
     public final void populateViewportLocked(DisplayViewport viewport) {
-    	  int rotation = mCurrentOrientation;    	  
-    	  rotation -= mHwRotation;    	      	   	  
+    	  int rotation = mCurrentOrientation;
+    	  rotation -= mHwRotation;
     	  if(rotation < 0){
     	  	rotation += 4;
      	  }    	     	          
         viewport.orientation = rotation;
-        viewport.orientation = mCurrentOrientation;
 
         if (mCurrentLayerStackRect != null) {
             viewport.logicalFrame.set(mCurrentLayerStackRect);

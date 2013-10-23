@@ -92,8 +92,10 @@ public class UsbStorageActivity extends Activity
     private StorageEventListener mStorageListener = new StorageEventListener() {
         @Override
         public void onStorageStateChanged(String path, String oldState, String newState) {
-            final boolean on = newState.equals(Environment.MEDIA_SHARED);
-            switchDisplay(on);
+            if(path.equals(Environment.getFlashStorageDirectory().getPath())){
+                final boolean on = newState.equals(Environment.MEDIA_SHARED);
+                switchDisplay(on);
+            }
         }
     };
     
@@ -188,7 +190,7 @@ public class UsbStorageActivity extends Activity
         super.onPause();
         
         unregisterReceiver(mUsbStateReceiver);
-        if (mStorageManager != null && mStorageListener != null) {
+        if (mStorageManager == null && mStorageListener != null) {
             mStorageManager.unregisterListener(mStorageListener);
         }
     }

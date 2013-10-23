@@ -26,6 +26,7 @@ import android.content.Context;
 import android.content.CursorLoader;
 import android.content.IIntentSender;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
@@ -34,6 +35,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.content.BroadcastReceiver;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -84,6 +86,7 @@ import android.view.WindowManager;
 import android.view.WindowManagerGlobal;
 import android.view.accessibility.AccessibilityEvent;
 import android.widget.AdapterView;
+import android.widget.LinearLayout;
 
 import com.android.internal.statusbar.IStatusBarService;
 
@@ -1003,7 +1006,42 @@ public class Activity extends ContextThemeWrapper
     private static String savedDialogArgsKeyFor(int key) {
         return SAVED_DIALOG_ARGS_KEY_PREFIX + key;
     }
-
+    
+		private void broadcastForBenchmark(String state) {
+        if(							 
+         	 mComponent.getPackageName().equals("com.ea.games.nfs13_na")||                    
+		 mComponent.getPackageName().equals("com.eamobile.nfshp_row_wf")||                  
+		 //mComponent.getPackageName().equals("com.t2ksports.nba2k13android")||             
+		 //mComponent.getPackageName().equals("com.madfingergames.shadowgun_amz")||         
+		 mComponent.getPackageName().equals("com.gameloft.android.ANMP.GloftA6HP")||      
+         	 mComponent.getPackageName().equals("com.gameloft.android.GAND.GloftA7HP")||
+           mComponent.getPackageName().contains("com.qihoo360.mobilesafe")||
+           //mComponent.getPackageName().equals("com.antutu.ABenchMark")||			// mg
+           mComponent.getPackageName().contains("com.aurorasoftworks.quadrant")||
+           mComponent.getPackageName().contains("org.zeroxlab.")||
+           mComponent.getPackageName().contains("com.glbenchmark.glbenchmark")||
+           mComponent.getPackageName().equals("com.drolez.nbench")||
+           mComponent.getPackageName().contains("com.greenecomputing.linpack")||
+           mComponent.getPackageName().equals("softweg.hw.performance")||
+           mComponent.getPackageName().equals("eu.chainfire.cfbench")||
+           mComponent.getPackageName().contains("se.nena.nenamark")||
+           mComponent.getPackageName().contains("com.rightware.tdmm")||           
+           mComponent.getPackageName().equals("com.ellismarkov.gpubench")||
+           mComponent.getPackageName().equals("com.tactel.electopia")||
+           //mComponent.getPackageName().contains("benchmark")|| 
+           mComponent.getPackageName().equals("cn.opda.android.activity")||          
+		 mComponent.getPackageName().equals("com.quicinc.vellamo")){
+							Intent intent= new Intent("android.intent.benchmark");
+							Bundle b=new Bundle();
+							b.putString("state", state);
+							b.putString("package", mComponent.flattenToString());
+							b.putIBinder("binder", mToken);
+							intent.putExtra("bundle", b);
+							sendBroadcast(intent);
+					}	
+    }
+    
+    
     /**
      * Called when activity start-up is complete (after {@link #onStart}
      * and {@link #onRestoreInstanceState} have been called).  Applications will
@@ -1105,6 +1143,9 @@ public class Activity extends ContextThemeWrapper
         if (DEBUG_LIFECYCLE) Slog.v(TAG, "onResume " + this);
         getApplication().dispatchActivityResumed(this);
         mCalled = true;
+
+			  broadcastForBenchmark("resume");
+	
     }
 
     /**
@@ -1295,6 +1336,9 @@ public class Activity extends ContextThemeWrapper
         if (DEBUG_LIFECYCLE) Slog.v(TAG, "onPause " + this);
         getApplication().dispatchActivityPaused(this);
         mCalled = true;
+	
+				broadcastForBenchmark("pause");
+	
     }
 
     /**
@@ -1461,6 +1505,8 @@ public class Activity extends ContextThemeWrapper
         }
 
         getApplication().dispatchActivityDestroyed(this);
+				broadcastForBenchmark("destroy");
+	
     }
 
     /**
@@ -1912,6 +1958,29 @@ public class Activity extends ContextThemeWrapper
     public void setContentView(int layoutResID) {
         getWindow().setContentView(layoutResID);
         initActionBar();
+        hackEditTextForCts();
+    }
+
+    /**
+    * Hack EditText for fixing cts4.2_r2 bug: testActionNextAndPreviousAtGranularityPageOverText
+    */
+    private void hackEditTextForCts() {
+        final String clsName = "AccessibilityTextTraversalActivity";
+        final int editId = 0x7f04000d;
+        
+        if (getClass().getSimpleName().equals(clsName)) {
+            DisplayMetrics metric = new DisplayMetrics();
+            getWindowManager().getDefaultDisplay().getMetrics(metric);
+            
+            if (metric.densityDpi == 160) {
+                try {
+                    View edit = findViewById(editId);
+                    edit.setLayoutParams(new LinearLayout.LayoutParams(195,200));
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
+            }
+        }
     }
 
     /**

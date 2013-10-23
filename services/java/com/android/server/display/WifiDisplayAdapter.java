@@ -47,6 +47,7 @@ import java.io.PrintWriter;
 import java.util.Arrays;
 
 import libcore.util.Objects;
+import android.os.SystemProperties;
 
 /**
  * Connects to Wifi displays that implement the Miracast protocol.
@@ -71,6 +72,7 @@ final class WifiDisplayAdapter extends DisplayAdapter {
     private static final int MSG_UPDATE_NOTIFICATION = 2;
 
     private static final String ACTION_DISCONNECT = "android.server.display.wfd.DISCONNECT";
+    private static final int mHwRotation = SystemProperties.getInt("ro.sf.hwrotation",0)/90;
 
     private final WifiDisplayHandler mHandler;
     private final PersistentDataStore mPersistentDataStore;
@@ -623,6 +625,7 @@ final class WifiDisplayAdapter extends DisplayAdapter {
                 mInfo.address = mAddress;
                 mInfo.touch = DisplayDeviceInfo.TOUCH_EXTERNAL;
                 mInfo.setAssumedDensityForExternalDisplay(mWidth, mHeight);
+                mInfo.rotation = mHwRotation;		
             }
             return mInfo;
         }

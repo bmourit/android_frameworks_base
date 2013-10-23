@@ -36,7 +36,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
+import android.os.SystemProperties;
 /**
  * A display adapter that uses overlay windows to simulate secondary displays
  * for development purposes.  Use Development Settings to enable one or more
@@ -52,7 +52,7 @@ import java.util.regex.Pattern;
 final class OverlayDisplayAdapter extends DisplayAdapter {
     static final String TAG = "OverlayDisplayAdapter";
     static final boolean DEBUG = false;
-
+    private static final int mHwRotation = SystemProperties.getInt("ro.sf.hwrotation",0)/90;
     private static final int MIN_WIDTH = 100;
     private static final int MIN_HEIGHT = 100;
     private static final int MAX_WIDTH = 4096;
@@ -244,6 +244,7 @@ final class OverlayDisplayAdapter extends DisplayAdapter {
                 mInfo.flags = 0;
                 mInfo.type = Display.TYPE_OVERLAY;
                 mInfo.touch = DisplayDeviceInfo.TOUCH_NONE;
+                mInfo.rotation = mHwRotation;		
             }
             return mInfo;
         }

@@ -32,6 +32,8 @@ import android.view.SurfaceSession;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.Transformation;
+import android.os.SystemProperties;
+
 
 class ScreenRotationAnimation {
     static final String TAG = "ScreenRotationAnimation";
@@ -108,6 +110,7 @@ class ScreenRotationAnimation {
     boolean mAnimRunning;
     boolean mFinishAnimReady;
     long mFinishAnimStartTime;
+    private static final int mOrientationDefault = SystemProperties.getInt("ro.sf.hwrotation",0);
 
     final Matrix mFrameInitialMatrix = new Matrix();
     final Matrix mSnapshotInitialMatrix = new Matrix();
@@ -194,13 +197,25 @@ class ScreenRotationAnimation {
         mDisplay = display;
 
         // Screenshot does NOT include rotation!
-        if (originalRotation == Surface.ROTATION_90
-                || originalRotation == Surface.ROTATION_270) {
-            mWidth = originalHeight;
-            mHeight = originalWidth;
+        if(mOrientationDefault == 90 || mOrientationDefault == 270)
+        {
+	        if (originalRotation == Surface.ROTATION_90
+	                || originalRotation == Surface.ROTATION_270) {
+	            mWidth = originalWidth;
+	            mHeight = originalHeight;
+	        } else {
+	            mWidth = originalHeight;
+	            mHeight = originalWidth;
+	        }
         } else {
-            mWidth = originalWidth;
-            mHeight = originalHeight;
+        	 if (originalRotation == Surface.ROTATION_90
+	                || originalRotation == Surface.ROTATION_270) {
+	            mWidth = originalHeight;
+	            mHeight = originalWidth;
+	        } else {
+	            mWidth = originalWidth;
+	            mHeight = originalHeight;
+	        }
         }
 
         mOriginalRotation = originalRotation;
@@ -311,7 +326,12 @@ class ScreenRotationAnimation {
         // Compute the transformation matrix that must be applied
         // to the snapshot to make it stay in the same original position
         // with the current screen rotation.
-        int delta = deltaRotation(rotation, Surface.ROTATION_0);
+        int delta = 0;
+        if(mOrientationDefault == 0) {
+        	delta = deltaRotation(rotation, Surface.ROTATION_0);
+        } else {
+        	delta = deltaRotation(rotation, Surface.ROTATION_0 + (4 - mOrientationDefault / 90));
+        }
         createRotationMatrix(delta, mWidth, mHeight, mSnapshotInitialMatrix);
 
         if (DEBUG_STATE) Slog.v(TAG, "**** ROTATION: " + delta);

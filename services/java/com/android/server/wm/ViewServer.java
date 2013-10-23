@@ -16,7 +16,7 @@
 
 package com.android.server.wm;
 
-
+import android.os.ParcelFileDescriptor;
 import android.util.Slog;
 
 import java.net.ServerSocket;
@@ -179,6 +179,45 @@ class ViewServer implements Runnable {
         }
     }
 
+    private boolean windowCommandWithDone(Socket client, String command, String parameters)
+    {
+        boolean result;
+        long cmdStartMillis = System.currentTimeMillis();
+
+        result = mWindowManager.viewServerWindowCommand(client, command, parameters);
+
+        long cmdDuration = System.currentTimeMillis() - cmdStartMillis;
+        if(client.getChannel() != null && client.getChannel().isOpen()) {
+           try {
+               // If viewServerWindowCommand() worked then this code
+               // doesn't accomplish anything because the client has already
+               // seen a DONE and isn't listening.  If something went wrong
+               // (e.g., the window Id in the command is not valid), this
+               // code will write the only DONE line the client will receive.
+               ParcelFileDescriptor out = ParcelFileDescriptor.fromSocket(client);
+               OutputStream clientStream = new ParcelFileDescriptor.AutoCloseOutputStream(out);
+               BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(clientStream), 64);
+
+               bw.write("DONE.");
+               bw.newLine();
+               bw.write("workaround. ");
+               if(result) {
+                   bw.write('t');
+               } else {
+                   bw.write('f');
+               }
+               bw.newLine();
+               bw.flush();
+               bw.close();
+           } catch (Exception ex) {
+               Slog.e(LOG_TAG, "failed writing cleanup output stream", ex);
+           }
+        }
+
+        Slog.d(LOG_TAG, command + "-done " + Long.toString(cmdDuration));
+        return result;
+    }
+
     private static boolean writeValue(Socket client, String value) {
         boolean result;
         BufferedWriter out = null;
@@ -246,8 +285,8 @@ class ViewServer implements Runnable {
                 } else if (COMMAND_WINDOW_MANAGER_AUTOLIST.equalsIgnoreCase(command)) {
                     result = windowManagerAutolistLoop();
                 } else {
-                    result = mWindowManager.viewServerWindowCommand(mClient,
-                            command, parameters);
+                    Slog.d(LOG_TAG, request);
+                    result = windowCommandWithDone(mClient, command, parameters);
                 }
 
                 if (!result) {

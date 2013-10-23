@@ -453,7 +453,7 @@ class MountService extends IMountService.Stub
                                 done = true;
                             } else {
                                 // Eliminate system process here?
-                                ams.killPids(pids, "unmount media", true);
+                                ams.killPids(pids, "unmount media", true);								
                                 // Confirm if file references have been freed.
                                 pids = getStorageUsers(path);
                                 if (pids == null || pids.length == 0) {
@@ -922,7 +922,9 @@ class MountService extends IMountService.Stub
                                     Environment.MEDIA_UNMOUNTABLE) && !getUmsEnabling()) {
                 if (DEBUG_EVENTS) Slog.i(TAG, "updating volume state for media bad removal nofs and unmountable");
                 updatePublicVolumeState(volume, Environment.MEDIA_UNMOUNTED);
-                action = Intent.ACTION_MEDIA_UNMOUNTED;
+                if (oldState == VolumeState.Unmounting) {
+                    action = Intent.ACTION_MEDIA_UNMOUNTED;
+                }
             }
         } else if (newState == VolumeState.Pending) {
         } else if (newState == VolumeState.Checking) {
@@ -1034,9 +1036,11 @@ class MountService extends IMountService.Stub
          * open on the external storage.
          */
         Runtime.getRuntime().gc();
-
+        
+        final StorageVolume primary = getPrimaryPhysicalVolume();
+        
         // Redundant probably. But no harm in updating state again.
-        if (isPrimaryStorage(path)) {
+        if (primary != null && path.equals(primary.getPath())) {
             mPms.updateExternalMediaStatus(false, false);
         }
         try {
@@ -1048,8 +1052,10 @@ class MountService extends IMountService.Stub
             }
             mConnector.execute(cmd);
             // We unmounted the volume. None of the asec containers are available now.
-            synchronized (mAsecMountSet) {
-                mAsecMountSet.clear();
+            if (primary != null && path.equals(primary.getPath())) {
+                synchronized (mAsecMountSet) {
+                    mAsecMountSet.clear();
+                }
             }
             return StorageResultCode.OperationSucceeded;
         } catch (NativeDaemonConnectorException e) {
@@ -1523,30 +1529,6 @@ class MountService extends IMountService.Stub
         }
     }
 
-    private boolean isPrimaryStorage(String path) {
-        synchronized (mVolumesLock) {
-            for (StorageVolume volume : mVolumes) {
-                if (volume.isPrimary() && volume.getPath().equals(path)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
-    private ArrayList<String> getShareableVolumes() {
-        // Sharable volumes have android:allowMassStorage="true" in storage_list.xml
-        ArrayList<String> volumesToMount = new ArrayList<String>();
-        synchronized (mVolumesLock) {
-            for (StorageVolume v : mVolumes) {
-                if (v.allowMassStorage()) {
-                    volumesToMount.add(v.getPath());
-                }
-            }
-        }
-        return volumesToMount;
-    }
-
     public void setUsbMassStorageEnabled(boolean enable) {
         waitForReady();
         validatePermission(android.Manifest.permission.MOUNT_UNMOUNT_FILESYSTEMS);
@@ -1556,10 +1538,10 @@ class MountService extends IMountService.Stub
 
         // TODO: Add support for multiple share methods
 
-        for (String path : getShareableVolumes()) {
-            /*
-             * If the volume is mounted and we're enabling then unmount it
-             */        String path = Environment.getFlashStorageDirectory().getPath();
+        /*
+         * If the volume is mounted and we're enabling then unmount it
+         */
+        String path = Environment.getFlashStorageDirectory().getPath();
         String vs = getVolumeState(path);
         String path_tf = Environment.getTfcardStorageDirectory().getPath();
         String vs_tf = getVolumeState(path_tf);
@@ -1574,13 +1556,11 @@ class MountService extends IMountService.Stub
                 umscb = new UmsEnableCallBack(path_tf, method, true);
                 mHandler.sendMessage(mHandler.obtainMessage(H_UNMOUNT_PM_UPDATE, umscb));
             }
-                UmsEnableCallBack umscb = new UmsEnableCallBack(path, method, true);
-                mHandler.sendMessage(mHandler.obtainMessage(H_UNMOUNT_PM_UPDATE, umscb));
-                // Clear override
-                setUmsEnabling(false);
-            }
-            /*
-             * If we disabled UMS then mount the volume
+            // Clear override
+            setUmsEnabling(false);
+        }
+        /*
+         * If we disabled UMS then mount the volume
          */
         if (!enable) {
             doShareUnshareVolume(path, method, enable);
@@ -1601,7 +1581,6 @@ class MountService extends IMountService.Stub
                 if (doMountVolume(path_tf) != StorageResultCode.OperationSucceeded) {
                     Slog.e(TAG, "Failed to remount " + path_tf 
                             + " after disabling share method " + method);
-                    }
                 }
             }
         }
@@ -1610,12 +1589,12 @@ class MountService extends IMountService.Stub
     public boolean isUsbMassStorageEnabled() {
         waitForReady();
 
-        for (String path : getShareableVolumes()) {
-            if (doGetVolumeShared(path, "ums"))
-                return true;
+        final StorageVolume primary = getPrimaryPhysicalVolume();
+        if (primary != null) {
+            return doGetVolumeShared(primary.getPath(), "ums");
+        } else {
+            return false;
         }
-        // no volume is shared
-        return false;
     }
 
     /**

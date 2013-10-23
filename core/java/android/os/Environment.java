@@ -260,14 +260,11 @@ public class Environment {
 
     private static final File DOWNLOAD_CACHE_DIRECTORY = getDirectory("DOWNLOAD_CACHE", "/cache");
 
-    private static final File FLASH_STORAGE_DIRECTORY
-        = getDirectory("FLASH_STORAGE", "/mnt/sdcard0");
+    private static final File FLASH_STORAGE_DIRECTORY = getDirectory("FLASH_STORAGE", "/mnt/sdcard0");
 
-    private static final File TFCARD_STORAGE_DIRECTORY
-        = getDirectory("TFCARD_STORAGE", "/mnt/sdcard1");
+    private static final File TFCARD_STORAGE_DIRECTORY = getDirectory("TFCARD_STORAGE", "/mnt/sdcard1");
 
-    private static final File UHOST_STORAGE_DIRECTORY
-        = getDirectory("UHOST_STORAGE", "/mnt/usbdisk0");
+    private static final File UHOST_STORAGE_DIRECTORY = getDirectory("UHOST_STORAGE", "/mnt/usbdisk0");
 
     /**
      * Gets the Android data directory.

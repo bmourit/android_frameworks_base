@@ -22,7 +22,7 @@ LOCAL_CERTIFICATE := platform
 
 # Tell aapt to create "extending (non-application)" resource IDs,
 # since these resources will be used by many apps.
-LOCAL_AAPT_FLAGS := -x
+LOCAL_AAPT_FLAGS := -x --auto-add-overlay
 
 LOCAL_MODULE_TAGS := optional
 
@@ -42,3 +42,7 @@ include $(BUILD_PACKAGE)
 
 # Make sure the system .rs files get compiled before building the package-export.apk.
 # $(resource_export_package): $(framework_RenderScript_STAMP_FILE)
+
+# define a global intermediate target that other module may depend on.
+.PHONY: framework-res-package-target
+framework-res-package-target: $(LOCAL_BUILT_MODULE)

@@ -25,6 +25,7 @@
 
 extern "C" {
 int ifc_enable(const char *ifname);
+int ifc_is_running(const char *ifname);
 int ifc_disable(const char *ifname);
 int ifc_reset_connections(const char *ifname, int reset_mask);
 
@@ -73,6 +74,23 @@ static struct fieldIds {
     jmethodID setLeaseDuration;
     jmethodID setVendorInfo;
 } dhcpResultsFieldIds;
+static char *in_addr_toa(char *s, in_addr_t addr) {
+    union {
+        in_addr_t i;
+        unsigned char c[4];
+    } u;
+    u.i = addr;
+    sprintf(s, "%d.%d.%d.%d", u.c[0], u.c[1], u.c[2], u.c[3]);
+    return s;
+}
+
+static jboolean android_net_utils_interfaceIsRunning(JNIEnv* env, jobject clazz, jstring ifname) {
+    int result;
+    const char *nameStr = env->GetStringUTFChars(ifname, NULL);
+    result = ::ifc_is_running(nameStr);
+    env->ReleaseStringUTFChars(ifname, nameStr);
+    return (jboolean)(result==0);
+}
 
 static jint android_net_utils_enableInterface(JNIEnv* env, jobject clazz, jstring ifname)
 {
@@ -249,6 +267,7 @@ static JNINativeMethod gNetworkUtilMethods[] = {
 
     { "enableInterface", "(Ljava/lang/String;)I",  (void *)android_net_utils_enableInterface },
     { "disableInterface", "(Ljava/lang/String;)I",  (void *)android_net_utils_disableInterface },
+    { "interfaceIsRunning", "(Ljava/lang/String;)Z",  (void *)android_net_utils_interfaceIsRunning },
     { "resetConnections", "(Ljava/lang/String;I)I",  (void *)android_net_utils_resetConnections },
     { "runDhcp", "(Ljava/lang/String;Landroid/net/DhcpResults;)Z",  (void *)android_net_utils_runDhcp },
     { "runDhcpRenew", "(Ljava/lang/String;Landroid/net/DhcpResults;)Z",  (void *)android_net_utils_runDhcpRenew },

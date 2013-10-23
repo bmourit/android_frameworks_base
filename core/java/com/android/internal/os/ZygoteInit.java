@@ -44,6 +44,28 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+class PreloadThread extends Thread {
+    private static final String TAG = "Zygote_PreloadThread";
+
+    Object mSync = new Object();
+    boolean mDone = false;	
+
+    public PreloadThread() {
+    }	
+
+    public void run() {
+        ZygoteInit.preloadClasses2();                        
+        actionDone();
+    }
+
+    private void actionDone() {		
+        synchronized (mSync) {
+            mDone = true;
+            mSync.notifyAll();
+        }
+    }
+
+}
 
 /**
  * Startup class for the zygote process.
@@ -90,9 +112,13 @@ public class ZygoteInit {
      * The name of a resource file that contains classes to preload.
      */
     private static final String PRELOADED_CLASSES = "preloaded-classes";
+    private static final String PRELOADED_CLASSES_2 = "preloaded-classes2";
 
     /** Controls whether we should preload resources during zygote init. */
-    private static final boolean PRELOAD_RESOURCES = false;
+    private static final boolean PRELOAD_RESOURCES = true;
+
+    private static final int MAX_PRELOAD_TIME = 60*1000;
+    static PreloadThread mPreloadThread = null;		
 
     /**
      * Invokes a static "main(argv[]) method on class "className".
@@ -224,8 +250,56 @@ public class ZygoteInit {
     }
 
     static void preload() {
+
+        final VMRuntime runtime = VMRuntime.getRuntime();
+
+        // Drop root perms while running static initializers.
+        setEffectiveGroup(UNPRIVILEGED_GID);
+        setEffectiveUser(UNPRIVILEGED_UID);
+
+        // Alter the target heap utilization.  With explicit GCs this
+        // is not likely to have any effect.
+        float defaultUtilization = runtime.getTargetHeapUtilization();
+        runtime.setTargetHeapUtilization(0.8f);
+
+        // Start with a clean slate.
+        System.gc();
+        runtime.runFinalizationSync();
+        Debug.startAllocCounting();
+
+
+        Log.i(TAG, "Start Preload");    
+        mPreloadThread = new PreloadThread();
+        mPreloadThread.start();
+           
         preloadClasses();
+
+        long endTime = SystemClock.elapsedRealtime() + MAX_PRELOAD_TIME;
+        synchronized (mPreloadThread.mSync) {
+            while (!mPreloadThread.mDone) {
+                long delay = endTime - SystemClock.elapsedRealtime();
+                if (delay <= 0) {
+                    Log.w(TAG, "PreloadThread timed out");
+                    break;
+                }
+                try {
+                    mPreloadThread.mSync.wait(delay);
+                } catch (InterruptedException e) {
+                }
+            }
+        }
+        // Restore default.
+        runtime.setTargetHeapUtilization(defaultUtilization);
+
+        Debug.stopAllocCounting();
+
+        // Bring back root. We'll need it later.
+        setEffectiveUser(ROOT_UID);
+        setEffectiveGroup(ROOT_GID);
+
         preloadResources();
+
+        Log.i(TAG, "Preload over");
     }
 
     /**
@@ -237,7 +311,7 @@ public class ZygoteInit {
      */
     private static void preloadClasses() {
         final VMRuntime runtime = VMRuntime.getRuntime();
-
+					// runtime.setTest();	// mg
         InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream(
                 PRELOADED_CLASSES);
         if (is == null) {
@@ -245,20 +319,6 @@ public class ZygoteInit {
         } else {
             Log.i(TAG, "Preloading classes...");
             long startTime = SystemClock.uptimeMillis();
-
-            // Drop root perms while running static initializers.
-            setEffectiveGroup(UNPRIVILEGED_GID);
-            setEffectiveUser(UNPRIVILEGED_UID);
-
-            // Alter the target heap utilization.  With explicit GCs this
-            // is not likely to have any effect.
-            float defaultUtilization = runtime.getTargetHeapUtilization();
-            runtime.setTargetHeapUtilization(0.8f);
-
-            // Start with a clean slate.
-            System.gc();
-            runtime.runFinalizationSync();
-            Debug.startAllocCounting();
 
             try {
                 BufferedReader br
@@ -308,14 +368,69 @@ public class ZygoteInit {
                 Log.e(TAG, "Error reading " + PRELOADED_CLASSES + ".", e);
             } finally {
                 IoUtils.closeQuietly(is);
-                // Restore default.
-                runtime.setTargetHeapUtilization(defaultUtilization);
+            }
+        }
+    }
 
-                Debug.stopAllocCounting();
+    public static void preloadClasses2() {
+        final VMRuntime runtime = VMRuntime.getRuntime();
 
-                // Bring back root. We'll need it later.
-                setEffectiveUser(ROOT_UID);
-                setEffectiveGroup(ROOT_GID);
+        InputStream is = ZygoteInit.class.getClassLoader().getResourceAsStream(
+                PRELOADED_CLASSES_2);
+        if (is == null) {
+            Log.e(TAG, "Couldn't find " + PRELOADED_CLASSES_2 + ".");
+        } else {
+            Log.i(TAG, "Preloading classes2...");
+            long startTime = SystemClock.uptimeMillis();
+
+            try {
+                BufferedReader br
+                    = new BufferedReader(new InputStreamReader(is), 256);
+
+                int count = 0;
+                String line;
+                while ((line = br.readLine()) != null) {
+                    // Skip comments and blank lines.
+                    line = line.trim();
+                    if (line.startsWith("#") || line.equals("")) {
+                        continue;
+                    }
+
+                    try {
+                        if (false) {
+                            Log.v(TAG, "Preloading " + line + "...");
+                        }
+                        Class.forName(line);
+                        if (Debug.getGlobalAllocSize() > PRELOAD_GC_THRESHOLD) {
+                            if (false) {
+                                Log.v(TAG,
+                                    " GC at " + Debug.getGlobalAllocSize());
+                            }
+                            System.gc();
+                            runtime.runFinalizationSync();
+                            Debug.resetGlobalAllocSize();
+                        }
+                        count++;
+                    } catch (ClassNotFoundException e) {
+                        Log.w(TAG, "Class not found for preloading: " + line);
+                    } catch (Throwable t) {
+                        Log.e(TAG, "Error preloading " + line + ".", t);
+                        if (t instanceof Error) {
+                            throw (Error) t;
+                        }
+                        if (t instanceof RuntimeException) {
+                            throw (RuntimeException) t;
+                        }
+                        throw new RuntimeException(t);
+                    }
+                }
+
+                Log.i(TAG, "...preloaded " + count + " classes2 in "
+                        + (SystemClock.uptimeMillis()-startTime) + "ms.");
+            } catch (IOException e) {
+                Log.e(TAG, "Error reading " + PRELOADED_CLASSES_2 + ".", e);
+            } finally {
+                IoUtils.closeQuietly(is);
             }
         }
     }
@@ -478,7 +593,7 @@ public class ZygoteInit {
         String args[] = {
             "--setuid=1000",
             "--setgid=1000",
-            "--setgroups=1001,1002,1003,1004,1005,1006,1007,1008,1009,1010,1018,3001,3002,3003,3006,3007,3009",
+            "--setgroups=1001,1002,1003,1004,1005,1006,1007,1008,1009,1010,1018,1021,3001,3002,3003,3004,3006,3007,3009",
             "--capabilities=130104352,130104352",
             "--runtime-init",
             "--nice-name=system_server",

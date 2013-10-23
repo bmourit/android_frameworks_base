@@ -316,6 +316,7 @@ public final class ViewRootImpl implements ViewParent,
     boolean mHandlingLayoutInLayoutRequest = false;
 
     private int mViewLayoutDirectionInitial;
+	private static final  int mSdramCap=SystemProperties.getInt("system.ram.total", 1024);
 
     /**
      * Consistency verifier for debugging purposes.
@@ -456,9 +457,15 @@ public final class ViewRootImpl implements ViewParent,
                 mViewLayoutDirectionInitial = mView.getRawLayoutDirection();
                 mFallbackEventHandler.setView(view);
                 mWindowAttributes.copyFrom(attrs);
-                if (mWindowAttributes.packageName == null) {
-                    mWindowAttributes.packageName = mBasePackageName;
-                }
+                if(mSdramCap<=512&& (mWindowAttributes.flags& WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)!=0){
+					final Context context=mView.getContext();
+					final PackageManager packageManager = context.getPackageManager();
+                      final String packageName = context.getApplicationInfo().packageName;
+                      if(packageName!=null && packageName.equals("gpc.myweb.hinet.net.PopupVideo")){
+                      	mWindowAttributes.flags&= ~WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED;
+                      }
+				}
+                
                 attrs = mWindowAttributes;
                 // Keep track of the actual window flags supplied by the client.
                 mClientWindowLayoutFlags = attrs.flags;

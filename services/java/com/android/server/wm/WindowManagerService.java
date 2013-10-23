@@ -285,10 +285,11 @@ public class WindowManagerService extends IWindowManager.Stub
 
     private static final String SYSTEM_SECURE = "ro.secure";
     private static final String SYSTEM_DEBUGGABLE = "ro.debuggable";
+
+    private static final int MAX_SCREENSHOT_RETRIES = 3;
     private static final String SYSTEM_DEFAULT_ROTATION = "ro.sf.default_rotation";
     private static final String SYSTEM_HW_ROTATION = "ro.sf.hwrotation";
 
-    private static final int MAX_SCREENSHOT_RETRIES = 3;
 
     final private KeyguardDisableHandler mKeyguardDisableHandler;
 
@@ -467,6 +468,7 @@ public class WindowManagerService extends IWindowManager.Stub
     int mForcedAppOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
     int mDefaultRotation = 0;
     int mHwRotation = 0;
+
     boolean mAltOrientation = false;
     ArrayList<IRotationWatcher> mRotationWatchers
             = new ArrayList<IRotationWatcher>();
@@ -778,11 +780,11 @@ public class WindowManagerService extends IWindowManager.Stub
                 com.android.internal.R.bool.config_sf_limitedAlpha);
         mDisplayManagerService = displayManager;
         mHeadless = displayManager.isHeadless();
+        mDefaultRotation = SystemProperties.getInt(SYSTEM_DEFAULT_ROTATION,0);
+        mHwRotation = SystemProperties.getInt(SYSTEM_HW_ROTATION,0) / 90;
         mDisplaySettings = new DisplaySettings(context);
         mDisplaySettings.readSettingsLocked();
 
-        mDefaultRotation = SystemProperties.getInt(SYSTEM_DEFAULT_ROTATION,0);
-        mHwRotation = SystemProperties.getInt(SYSTEM_HW_ROTATION,0) / 90;
         mDisplayManager = (DisplayManager)context.getSystemService(Context.DISPLAY_SERVICE);
         mDisplayManager.registerDisplayListener(this, null);
         Display[] displays = mDisplayManager.getDisplays();
@@ -5479,6 +5481,9 @@ public class WindowManagerService extends IWindowManager.Stub
 
                 // The screenshot API does not apply the current screen rotation.
                 rot = getDefaultDisplayContentLocked().getDisplay().getRotation();
+            // Allow for abnormal hardware orientation
+            rot = (rot + (android.os.SystemProperties.getInt("ro.sf.hwrotation",0) / 90 )) % 4;
+
                 int fw = frame.width();
                 int fh = frame.height();
 
@@ -8947,6 +8952,7 @@ public class WindowManagerService extends IWindowManager.Stub
                                 }
                             }
                         }
+
                         /* force to show starting window when rotation */
                         if (atoken != null && w == atoken.startingWindow
                             && w.isOnScreen() && w.isDrawnLw()) {

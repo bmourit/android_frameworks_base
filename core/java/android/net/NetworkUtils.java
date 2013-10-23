@@ -102,6 +102,12 @@ public class NetworkUtils {
      */
     public native static String getDhcpError();
 
+    public native static boolean runStaticIPConfigure(String ifname, String ip, String mask,
+            String gateway, String dns1, String dsn2);
+
+
+    public native static boolean interfaceIsRunning(String ifname);
+
     /**
      * Convert a IPv4 address from an integer to an InetAddress.
      * @param hostAddress an int corresponding to the IPv4 address in network byte order
