@@ -1,5 +1,8 @@
 /*
  * Copyright (C) 2006 The Android Open Source Project
+ * Copyright (c) 2013 The Linux Foundation. All rights reserved.
+ *
+ * Not a Contribution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -972,6 +975,7 @@ public final class Settings {
             MOVED_TO_SECURE.add(Secure.LOCK_DOTS_VISIBLE);
             MOVED_TO_SECURE.add(Secure.LOCK_PATTERN_TACTILE_FEEDBACK_ENABLED);
             MOVED_TO_SECURE.add(Secure.LOCK_BEFORE_UNLOCK);
+            MOVED_TO_SECURE.add(Secure.LOCK_NUMPAD_RANDOM);
             MOVED_TO_SECURE.add(Secure.LOCKSCREEN_UNSECURE_USED);
             MOVED_TO_SECURE.add(Secure.LOGGING_ID);
             MOVED_TO_SECURE.add(Secure.PARENTAL_CONTROL_ENABLED);
@@ -2736,6 +2740,13 @@ public final class Settings {
          * @hide
          */
         public static final String ACTIVE_DISPLAY_SUNLIGHT_MODE = "active_display_sunlight_mode";
+
+        /**
+         * A list of packages to exclude from being displayed in active display.
+         * This should be a string of packages separated by |
+         * @hide
+         */
+        public static final String ACTIVE_DISPLAY_EXCLUDED_APPS = "active_display_excluded_apps";
 
         /**
          * @deprecated Use {@link android.provider.Settings.Global#LOW_BATTERY_SOUND}
@@ -6176,6 +6187,16 @@ public final class Settings {
             "lock_before_unlock";
 
         /**
+         * Whether the NumKeyPad will change the orders of numbers
+         * in a PIN locked lockscreen
+         * 0 = off | 1 = always | 2 = only on request
+         * @hide
+          */
+
+        public static final String LOCK_NUMPAD_RANDOM =
+            "lock_numpad_random";
+
+        /**
          * Stores used unsecure lockscreen for normal mode and unlock before unlock
          * @hide
          */
@@ -8747,6 +8768,67 @@ public final class Settings {
         public static boolean putFloat(ContentResolver cr, String name, float value) {
             return putString(cr, name, Float.toString(value));
         }
+
+
+        /**
+          * Subscription to be used for voice call on a multi sim device. The supported values
+          * are 0 = SUB1, 1 = SUB2 and etc.
+          * @hide
+          */
+        public static final String MULTI_SIM_VOICE_CALL_SUBSCRIPTION = "multi_sim_voice_call";
+
+        /**
+          * Used to provide option to user to select subscription during dial.
+          * The supported values are 0 = disable or 1 = enable prompt.
+          * @hide
+          */
+        public static final String MULTI_SIM_VOICE_PROMPT = "multi_sim_voice_prompt";
+
+        /**
+          * Subscription to be used for data call on a multi sim device. The supported values
+          * are 0 = SUB1, 1 = SUB2 and etc.
+          * @hide
+          */
+        public static final String MULTI_SIM_DATA_CALL_SUBSCRIPTION = "multi_sim_data_call";
+
+        /**
+          * Subscription to be used for SMS on a multi sim device. The supported values
+          * are 0 = SUB1, 1 = SUB2 and etc.
+          * @hide
+          */
+        public static final String MULTI_SIM_SMS_SUBSCRIPTION = "multi_sim_sms";
+
+       /**
+          * Used to provide option to user to select subscription during send SMS.
+          * The value 1 - enable, 0 - disable
+          * @hide
+          */
+        public static final String MULTI_SIM_SMS_PROMPT = "multi_sim_sms_prompt";
+
+
+
+        /** User preferred subscriptions setting.
+          * This holds the details of the user selected subscription from the card and
+          * the activation status. Each settings string have the coma separated values
+          * iccId,appType,appId,activationStatus,3gppIndex,3gpp2Index
+          * @hide
+         */
+        public static final String[] MULTI_SIM_USER_PREFERRED_SUBS = {"user_preferred_sub1",
+                "user_preferred_sub2","user_preferred_sub3"};
+
+        /**
+          * Subscription to be used decide priority sub on a multi sim device. The supported values
+          * are 0 = SUB1, 1 = SUB2, 2 = SUB3.
+          * @hide
+          */
+        public static final String MULTI_SIM_PRIORITY_SUBSCRIPTION = "multi_sim_priority";
+
+        /**
+          * To know the status of tune away. The supported values
+          * are false = disable, true = enable.
+          * @hide
+          */
+        public static final String TUNE_AWAY_STATUS = "tune_away";
     }
 
     /**

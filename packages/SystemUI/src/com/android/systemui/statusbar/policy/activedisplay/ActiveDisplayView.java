@@ -59,6 +59,7 @@ import android.provider.Settings;
 import android.service.notification.INotificationListener;
 import android.service.notification.StatusBarNotification;
 import android.telephony.TelephonyManager;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Gravity;
@@ -79,7 +80,10 @@ import com.android.systemui.statusbar.BaseStatusBar;
 import com.android.systemui.statusbar.tablet.TabletStatusBar;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ActiveDisplayView extends FrameLayout {
     private static final boolean DEBUG = false;
@@ -153,6 +157,7 @@ public class ActiveDisplayView extends FrameLayout {
     private int mBrightnessMode = -1;
     private int mUserBrightnessLevel = -1;
     private boolean mSunlightModeEnabled = false;
+    private Set<String> mExcludedApps = new HashSet<String>();
 
     /**
      * Simple class that listens to changes in notifications
@@ -192,6 +197,7 @@ public class ActiveDisplayView extends FrameLayout {
                 mNotification = null;
                 hideNotificationView();
                 if (!mKeyguardManager.isKeyguardSecure()) {
+                    sendUnlockBroadcast();
                     // This is a BUTT ugly hack to allow dismissing the slide lock
                     Intent intent = new Intent(mContext, DummyActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -205,6 +211,7 @@ public class ActiveDisplayView extends FrameLayout {
             } else if (target == OPEN_APP_TARGET) {
                 hideNotificationView();
                 if (!mKeyguardManager.isKeyguardSecure()) {
+                    sendUnlockBroadcast();
                     try {
                         // Dismiss the lock screen when Settings starts.
                         ActivityManagerNative.getDefault().dismissKeyguardOnNextActivity();
@@ -215,6 +222,12 @@ public class ActiveDisplayView extends FrameLayout {
             } else if (target == DISMISS_TARGET) {
                 dismissNotification();
             }
+        }
+
+        private void sendUnlockBroadcast() {
+            Intent u = new Intent();
+            u.setAction("com.android.lockscreen.ACTION_UNLOCK_RECEIVER");
+            mContext.sendBroadcastAsUser(u, UserHandle.ALL);
         }
 
         public void onReleased(final View v, final int handle) {
@@ -280,6 +293,8 @@ public class ActiveDisplayView extends FrameLayout {
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.ACTIVE_DISPLAY_SUNLIGHT_MODE), false, this);
             resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.ACTIVE_DISPLAY_EXCLUDED_APPS), false, this);
+            resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.SCREEN_BRIGHTNESS_MODE), false, this);
             update();
         }
@@ -317,6 +332,10 @@ public class ActiveDisplayView extends FrameLayout {
                     resolver, Settings.System.ACTIVE_DISPLAY_BRIGHTNESS, 100) / 100f;
             mSunlightModeEnabled = Settings.System.getInt(
                     resolver, Settings.System.ACTIVE_DISPLAY_SUNLIGHT_MODE, 0) == 1;
+            String excludedApps = Settings.System.getString(resolver,
+                    Settings.System.ACTIVE_DISPLAY_EXCLUDED_APPS);
+
+            createExcludedAppsSet(excludedApps);
 
             int brightnessMode = Settings.System.getInt(
                     resolver, Settings.System.SCREEN_BRIGHTNESS_MODE, -1);
@@ -645,6 +664,7 @@ public class ActiveDisplayView extends FrameLayout {
                     mNotification.getPackageName(), mNotification.getTag(),
                     mNotification.getId());
         } catch (RemoteException e) {
+        } catch (NullPointerException npe) {
         }
         mNotification = getNextAvailableNotification();
         if (mNotification != null) {
@@ -921,7 +941,8 @@ public class ActiveDisplayView extends FrameLayout {
      * @return True if it should be used, false otherwise.
      */
     private boolean isValidNotification(StatusBarNotification sbn) {
-        return (!isOnCall() && (sbn.isClearable() || mShowAllNotifications)
+        return (!mExcludedApps.contains(sbn.getPackageName()) && !isOnCall()
+                && (sbn.isClearable() || mShowAllNotifications)
                 && !(mHideLowPriorityNotifications && sbn.getNotification().priority < HIDE_NOTIFICATIONS_BELOW_SCORE));
     }
 
@@ -1168,5 +1189,16 @@ public class ActiveDisplayView extends FrameLayout {
             am.cancel(pi);
         } catch (Exception e) {
         }
+    }
+
+    /**
+     * Create the set of excluded apps given a string of packages delimited with '|'.
+     * @param excludedApps
+     */
+    private void createExcludedAppsSet(String excludedApps) {
+        if (TextUtils.isEmpty(excludedApps))
+            return;
+        String[] appsToExclude = excludedApps.split("\\|");
+        mExcludedApps = new HashSet<String>(Arrays.asList(appsToExclude));
     }
 }
