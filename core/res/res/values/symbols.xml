@@ -2163,4 +2163,7 @@
   <java-symbol type="id" name="key8" />
   <java-symbol type="id" name="key9" />
 
+  <!-- LED flashlight -->
+  <java-symbol type="bool" name="config_enableTorch" />
+
 </resources>
